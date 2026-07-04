@@ -599,6 +599,21 @@
     padding: 20px;
   }
   #auth-screen.hidden { display: none; }
+  .auth-box { display: none; }
+  .auth-box.ready { display: block; }
+  #auth-loading {
+    color: rgba(255,255,255,0.85);
+    font-size: 14px;
+    text-align: center;
+  }
+  #auth-loading .spinner {
+    width: 28px; height: 28px; margin: 0 auto 14px;
+    border: 3px solid rgba(255,255,255,0.25);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: auth-spin 0.8s linear infinite;
+  }
+  @keyframes auth-spin { to { transform: rotate(360deg); } }
   .auth-box {
     background: var(--white);
     border-radius: 20px;
@@ -926,6 +941,10 @@
 
 <!-- ══ AUTH SCREEN ══ -->
 <div id="auth-screen">
+  <div id="auth-loading">
+    <div class="spinner"></div>
+    جارٍ التحقق من الجلسة...
+  </div>
   <div class="auth-box">
 
     <!-- tabs -->
@@ -7063,19 +7082,30 @@ window.doLogout = async function() {
   document.getElementById('li-pass').value  = '';
   document.getElementById('li-error').textContent = '';
   document.getElementById('auth-screen').classList.remove('hidden');
+  revealAuthForm();
 };
 
 // يستعيد الجلسة تلقائياً لو المستخدم كان مسجّلاً دخوله سابقاً في نفس المتصفح
+// يُظهر نموذج تسجيل الدخول ويخفي مؤشر التحميل — يُستدعى فقط لو تأكّدنا إنه ما فيه
+// جلسة صالحة، عشان نمنع "ومضة" نموذج الدخول قبل ما تظهر الصفحة الفعلية لمستخدم مسجّل مسبقاً
+function revealAuthForm() {
+  const loading = document.getElementById('auth-loading');
+  if (loading) loading.style.display = 'none';
+  const box = document.querySelector('#auth-screen .auth-box');
+  if (box) box.classList.add('ready');
+}
+
 window.restoreSession = async function() {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session || !session.user || !session.user.email) return;
+  if (!session || !session.user || !session.user.email) { revealAuthForm(); return; }
 
   // عند استعادة جلسة قائمة (تحديث الصفحة) لا نسجّل الخروج على أول فشل —
   // قد يكون تزامناً مؤقتاً بين الجلسة المخزّنة محلياً وطلب القراءة من القاعدة، فنعيد المحاولة مرة واحدة
   const ok = await loadCurrentUserProfile(session.user.email, { signOutOnFailure: false });
   if (!ok) {
     await new Promise(r => setTimeout(r, 900));
-    await loadCurrentUserProfile(session.user.email, { signOutOnFailure: false });
+    const ok2 = await loadCurrentUserProfile(session.user.email, { signOutOnFailure: false });
+    if (!ok2) revealAuthForm();
   }
 };
 
