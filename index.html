@@ -6999,6 +6999,9 @@ function applyLogin() {
   document.getElementById('user-badge-email').textContent = email + (role==='admin'?' · أدمن':'');
   document.getElementById('auth-screen').classList.add('hidden');
   applyPermissions();
+  // نحمّل بيانات الموقع هنا تحديدًا (مو عند تحميل الصفحة مباشرة) عشان نضمن
+  // إن الجلسة مرتبطة بعميل Supabase أولاً، سواء كان الدخول تفاعلياً أو استعادة جلسة
+  if (window.loadAllAppData) window.loadAllAppData();
   addAuditEntry(name, 'دخول', '—', '—', `تسجيل دخول — ${email}${role==='admin'?' (أدمن)':''}`, '');
   showToast(`أهلاً ${name} 👋`);
 }
@@ -7477,7 +7480,11 @@ window.showProfileEdit = async function() {
   if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') window.doRegister(); });
 });
 
-loadDb().then(async () => {
+// نجمّع كل تحميل البيانات بدالة واحدة نستدعيها فقط بعد التأكد من استعادة الجلسة —
+// لو شغّلناها بالتوازي مع استعادة الجلسة، ممكن تنطلق طلبات القراءة قبل ما يرتبط
+// توكن الدخول بعميل Supabase فترجع فاضية بسبب RLS، وما تُعاد لاحقاً تلقائياً
+window.loadAllAppData = async function() {
+  await loadDb();
   renderDb();
   if (window.populateContractDropdowns) populateContractDropdowns();
   await loadContracts();
@@ -7490,7 +7497,7 @@ loadDb().then(async () => {
   if (window.renderOperations) renderOperations();
   if (window.renderAlerts) renderAlerts();
   if (window.renderCollectionPage) renderCollectionPage();
-});
+};
 
 /* ═══════════════════════════════════════════════════════════════
    [إضافة جديدة] PAYMENTS MODULE — قسم الدفعات (إدخال يدوي بالكامل)
@@ -10329,6 +10336,7 @@ window.exportToPDF = function(title, columns, rows, subtitle) {
 };
 
 // يستعيد جلسة Supabase Auth تلقائياً لو المستخدم مسجّل دخوله مسبقاً في هذا المتصفح
+// (تحميل بيانات الموقع يبدأ من داخل applyLogin نفسها بعد نجاح الاستعادة)
 window.restoreSession();
 
 }); // end DOMContentLoaded
