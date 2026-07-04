@@ -15,4 +15,4 @@ jobs:
         with:
           node-version: 22
       - name: Check for unsanitized user input in innerHTML
-        run: node scripts/check-xss.mjs index.html.html
+        run: node scripts/check-xss.mjs index.html
