@@ -2992,9 +2992,10 @@ function computeContractStatus(c) {
   const s = parseDate(c.start);
   const e = parseDate(c.end);
 
-  // مكتمل: ما فيه متبقٍ — سواء كان له سعر أصلاً (عادي) أو انتهت مدته والمبلغ مسدد
-  // (حالة عقود مستوردة قديمة بدون تسعير مسجّل لكنها منتهية وما عليها شي)
-  if (c.rem <= 0 && (c.total > 0 || (e && e < today))) return 'مكتمل';
+  // مكتمل: ما فيه متبقٍ — وله سعر أصلاً (عادي)، أو ما له سعر لكن دخلت عليه دفعات فعلية
+  // (يعني اتسدد فعلياً ومو مجرد صفر افتراضي لعقد جديد ما سُعِّر بعد)
+  const hasRealPayments = paymentsLog.some(p => p.contractId === c.id);
+  if (c.rem <= 0 && (c.total > 0 || hasRealPayments)) return 'مكتمل';
   if (!c.price || c.price === 0) return 'بدون تسعير';
   if (s && s > today) return 'لم يبدأ';
   if (e && e < today && c.rem > 0) return 'متعثر';
