@@ -2992,9 +2992,9 @@ function computeContractStatus(c) {
   const s = parseDate(c.start);
   const e = parseDate(c.end);
 
+  if (c.total > 0 && c.rem <= 0) return 'مكتمل';
   if (!c.price || c.price === 0) return 'بدون تسعير';
   if (s && s > today) return 'لم يبدأ';
-  if (c.total > 0 && c.rem <= 0) return 'مكتمل';
   if (e && e < today && c.rem > 0) return 'متعثر';
   if (s && c.total > 0) {
     const elapsedDays = Math.max(0, Math.floor((today - s) / 86400000) + 2);
