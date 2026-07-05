@@ -5429,13 +5429,14 @@ window.renderReports = function() {
   const all    = contracts;
 
   /* ─── FINANCIAL ─── */
+  const totalContracted = active.reduce((s,c)=>s+c.total,0);
   const totalPaid = active.reduce((s,c)=>s+(c.total-c.rem),0);
   const totalRem  = active.reduce((s,c)=>s+c.rem,0);
-  const pct = 377800>0 ? Math.round(totalPaid/377800*100) : 0;
+  const pct = totalContracted>0 ? Math.round(totalPaid/totalContracted*100) : 0;
 
   rptActiveContracts = active;
   const overdueAmount = computeOverdueToDate(active);
-  renderFinBento(377800, totalPaid, totalRem, pct, active.length, overdueAmount);
+  renderFinBento(totalContracted, totalPaid, totalRem, pct, active.length, overdueAmount);
   renderContractPulse();
 
   const revRows = [
