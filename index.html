@@ -5439,11 +5439,13 @@ window.renderReports = function() {
   renderFinBento(totalContracted, totalPaid, totalRem, pct, active.length, overdueAmount);
   renderContractPulse();
 
+  const opRevenue = active.reduce((s,c) => s + (c.price||0) * (c.buses||0) * (c.days||0), 0);
+  const rawahelStationFees = active.filter(c => c.carrier === 'رواحل').reduce((s,c) => s + (c.rental||0) * (c.buses||0) * (c.days||0), 0);
+  const otherStationFees = active.filter(c => c.carrier && c.carrier !== 'رواحل' && c.carrier !== '—').reduce((s,c) => s + (c.rental||0) * (c.buses||0) * (c.days||0), 0);
   const revRows = [
-    {label:'إجمالي إيجار الحافلات',      amount:197800,note:'الإيراد التشغيلي الأساسي'},
-    {label:'رسوم المحاور — رواحل',        amount:100800,note:'رسوم المحاور الخاصة بشركة رواحل'},
-    {label:'رسوم المحاور — شركات أخرى',   amount:79200, note:'رسوم المحاور لباقي الشركات'},
-    {label:'رسوم مواقف كدانه',            amount:48800, note:'رسوم ثابتة'},
+    {label:'إجمالي إيجار الحافلات',      amount:opRevenue,        note:'الإيراد التشغيلي الأساسي'},
+    {label:'رسوم المحاور — رواحل',        amount:rawahelStationFees, note:'رسوم المحاور الخاصة بشركة رواحل'},
+    {label:'رسوم المحاور — شركات أخرى',   amount:otherStationFees,  note:'رسوم المحاور لباقي الشركات'},
   ];
   const revTotal = revRows.reduce((s,r)=>s+r.amount,0);
   document.getElementById('rpt-revenue-body').innerHTML = revRows.map(r=>{
