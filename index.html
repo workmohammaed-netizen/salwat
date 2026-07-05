@@ -2996,7 +2996,9 @@ function computeContractStatus(c) {
   // (يعني اتسدد فعلياً ومو مجرد صفر افتراضي لعقد جديد ما سُعِّر بعد)
   const hasRealPayments = paymentsLog.some(p => p.contractId === c.id);
   if (c.rem <= 0 && (c.total > 0 || hasRealPayments)) return 'مكتمل';
-  if (!c.price || c.price === 0) return 'بدون تسعير';
+  // بدون تسعير فعليًا لو ما فيه لا سعر تشغيل (price) ولا رسوم محطة (rental) —
+  // عقد له رسوم محطة بس بدون سعر تشغيل يُعتبر مسعّراً برضو (مو "بدون تسعير")
+  if ((!c.price || c.price === 0) && (!c.rental || c.rental === 0)) return 'بدون تسعير';
   if (s && s > today) return 'لم يبدأ';
   if (e && e < today && c.rem > 0) return 'متعثر';
   if (s && c.total > 0) {
