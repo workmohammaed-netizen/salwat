@@ -7529,6 +7529,7 @@ window.loadAllAppData = async function() {
   await loadFinancials();
   await loadClientBalances();
   await loadAuditLog();
+  await loadManualPayments();
   if (window.renderAuditLog) renderAuditLog();
   if (window.filterContracts) filterContracts();
   if (window.renderReports) renderReports();
@@ -7546,6 +7547,42 @@ window.newManualPayments = newManualPayments;
 let payIdSeq = 1;
 window.payIdSeq = payIdSeq;
 let payEditingParentId = null;
+
+// دفعات مُدخلة تحت عقد متزامن تلقائيًا (صف العقد نفسه لا يُحفظ بهذا الجدول) —
+// نحتفظ فيها هنا مؤقتاً لين تنشئ syncContractsToManualPayments صف العقد فنعيد إلحاقها فيه
+window.pendingSyncedChildren = [];
+
+// يحمّل السجلات المُدخلة يدوياً (غير المتزامنة تلقائياً من العقود) من قاعدة البيانات
+async function loadManualPayments() {
+  const { data, error } = await supabaseClient.from('manual_payment_records').select('*').order('id');
+  if (error) return;
+  const rows = data || [];
+  const byId = {};
+  rows.forEach(r => {
+    byId[r.id] = {
+      id: r.id, client: r.client, contract: r.contract_label,
+      due: r.due_date || '', total: Number(r.total)||0, paid: Number(r.paid)||0, remaining: Number(r.remaining)||0,
+      status: r.status, payCount: r.pay_count, monthsCount: r.months_count, method: r.method,
+      sender: r.sender||'', receiver: r.receiver||'', payDate: r.pay_date||'',
+      bankRef: r.bank_ref||'', bankName: r.bank_name||'', transferStatus: r.transfer_status||'',
+      children: [],
+    };
+  });
+  newManualPayments.length = 0;
+  window.pendingSyncedChildren.length = 0;
+  rows.forEach(r => {
+    const rec = byId[r.id];
+    if (r.synced_contract_id) {
+      rec._contractIdParent = r.synced_contract_id;
+      window.pendingSyncedChildren.push(rec);
+    } else if (r.parent_id && byId[r.parent_id]) {
+      byId[r.parent_id].children.push(rec);
+    } else if (!r.parent_id) {
+      newManualPayments.push(rec);
+    }
+  });
+  payIdSeq = rows.length ? Math.max(...rows.map(r => r.id)) + 1 : 1;
+}
 
 function payFmt(n) { return (Number(n) || 0).toLocaleString('en-US'); }
 
@@ -7714,7 +7751,7 @@ window.payCalcRemaining = function() {
   }
 };
 
-window.savePaymentRecord = function() {
+window.savePaymentRecord = async function() {
   const client   = document.getElementById('pay-f-client').value.trim();
   const contractSelEl = document.getElementById('pay-f-contract');
   const contractId    = contractSelEl.value.trim();
@@ -7750,25 +7787,48 @@ window.savePaymentRecord = function() {
     return;
   }
 
+  const remaining = Math.max(total - paid, 0);
+  const finalBankRef  = manualPayMethod === 'تحويل بنكي' ? bankRef  : '';
+  const finalBankName = manualPayMethod === 'تحويل بنكي' ? bankName : '';
+  const finalTransferStatus = manualPayMethod === 'تحويل بنكي' ? transferStatus : '';
+
+  let parent = null;
+  let dbParentId = null;
+  let syncedContractId = null;
+  if (payEditingParentId) {
+    parent = newManualPayments.find(p => p.id === payEditingParentId);
+    if (!parent) { errEl.textContent = '⚠️ تعذّر العثور على الدفعة الأساسية'; return; }
+    if (parent._contractId) syncedContractId = parent._contractId; // صف عقد متزامن، ما له وجود حقيقي بالجدول
+    else dbParentId = parent.id;
+  }
+
+  const { data: row, error: dbErr } = await supabaseClient.from('manual_payment_records').insert({
+    parent_id: dbParentId, synced_contract_id: syncedContractId,
+    client, contract_label: contract, due_date: due || null,
+    total, paid, remaining, status,
+    pay_count: payCount, months_count: monthsCount, method: manualPayMethod,
+    sender, receiver, pay_date: payDate || null,
+    bank_ref: finalBankRef || null, bank_name: finalBankName || null, transfer_status: finalTransferStatus || null,
+  }).select().single();
+  if (dbErr) { errEl.textContent = 'تعذّر حفظ الدفعة: ' + dbErr.message; return; }
+
   const record = {
-    id: payIdSeq++,
+    id: row.id,
     client, contract, due,
     total, paid,
-    remaining: Math.max(total - paid, 0),
+    remaining,
     status,
     payCount,     // عدد الدفعات المُدخل يدوياً
     monthsCount,  // عدد الأشهر المُدخل يدوياً
     method: manualPayMethod,           // كاش / تحويل بنكي / شبكة
     sender, receiver, payDate,         // بيانات السداد
-    bankRef:  manualPayMethod === 'تحويل بنكي' ? bankRef  : '',
-    bankName: manualPayMethod === 'تحويل بنكي' ? bankName : '',
-    transferStatus: manualPayMethod === 'تحويل بنكي' ? transferStatus : '',
+    bankRef:  finalBankRef,
+    bankName: finalBankName,
+    transferStatus: finalTransferStatus,
     children: []
   };
 
-  if (payEditingParentId) {
-    const parent = newManualPayments.find(p => p.id === payEditingParentId);
-    if (!parent) { errEl.textContent = '⚠️ تعذّر العثور على الدفعة الأساسية'; return; }
+  if (parent) {
     parent.children.push(record);
     parent._open = true;
   } else {
@@ -7787,7 +7847,7 @@ window.togglePaymentChildren = function(id) {
   renderPayments();
 };
 
-window.deletePaymentRecord = function(id, parentId) {
+window.deletePaymentRecord = async function(id, parentId) {
   // دفعات الحافلات الإضافية لا تُحذف من هنا — التعديل يكون من نافذة العقد في صفحة العقود
   if (parentId) {
     const parent = newManualPayments.find(p => p.id === parentId);
@@ -7798,6 +7858,13 @@ window.deletePaymentRecord = function(id, parentId) {
     }
   }
   if (!confirm('هل أنت متأكد من حذف هذه الدفعة' + (parentId ? ' التابعة' : ' وجميع دفعاتها التابعة') + '؟')) return;
+
+  const isSyncedContractRow = !parentId && newManualPayments.find(p => p.id === id)?._contractId;
+  if (!isSyncedContractRow) {
+    const { error } = await supabaseClient.from('manual_payment_records').delete().eq('id', id);
+    if (error) { if (typeof window.showToast === 'function') window.showToast('تعذّر حذف الدفعة: ' + error.message); return; }
+  }
+
   if (parentId) {
     const parent = newManualPayments.find(p => p.id === parentId);
     if (parent) parent.children = parent.children.filter(c => c.id !== id);
@@ -8130,7 +8197,14 @@ window.syncContractsToManualPayments = function() {
       if (sched) row.payCount = sched.length;
     }
 
-
+    // نُلحق أي دفعات يدوية مُدخلة سابقاً تحت هذا العقد (محفوظة بقاعدة البيانات) بصف العقد المتزامن
+    if (window.pendingSyncedChildren && window.pendingSyncedChildren.length) {
+      const mine = window.pendingSyncedChildren.filter(ch => ch._contractIdParent === c.id);
+      if (mine.length) {
+        mine.forEach(ch => { if (!row.children.some(existing => existing.id === ch.id)) row.children.push(ch); });
+        window.pendingSyncedChildren = window.pendingSyncedChildren.filter(ch => ch._contractIdParent !== c.id);
+      }
+    }
   });
   renderPayments();
 };
