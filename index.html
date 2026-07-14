@@ -2050,6 +2050,11 @@
 </div>
 
 <!-- ═══ MODAL: CONTRACT DETAIL + PAYMENT ═══ -->
+<style>
+  /* وضع القراءة فقط لنافذة تفاصيل العقد — يُفعَّل عند فتحها من أي صفحة غير "العقود"
+     (التعديل والإضافة يبقيان حصراً من صفحة العقود نفسها) */
+  #detail-overlay.readonly-mode .det-edit-only { display: none !important; }
+</style>
 <div class="modal-overlay" id="detail-overlay" onclick="handleDetailOverlay(event)">
   <div class="modal" id="detail-box" style="max-width:560px;">
     <div class="modal-header">
@@ -2108,11 +2113,11 @@
       </div>
 
       <!-- [نُقلت تفاصيل الدفع إلى صفحة الدفعات] -->
-      <button class="btn-sm" onclick="goToContractPayments()" style="width:100%;padding:11px;background:var(--gold);border-color:var(--gold);color:#FFFFFF;font-weight:500;font-size:13px;">
+      <button class="btn-sm det-edit-only" onclick="goToContractPayments()" style="width:100%;padding:11px;background:var(--gold);border-color:var(--gold);color:#FFFFFF;font-weight:500;font-size:13px;">
         💳 إدارة دفعات هذا العقد (سجل الدفعات · الخصومات · الجدولة · تسجيل دفعة)
       </button>
 
-      <button class="btn-sm" onclick="window.openFlowModal()" style="width:100%;padding:11px;margin-top:10px;background:#EEF3F8;border-color:#C8D9E8;color:#0C447C;font-weight:500;font-size:13px;">
+      <button class="btn-sm det-edit-only" onclick="window.openFlowModal()" style="width:100%;padding:11px;margin-top:10px;background:#EEF3F8;border-color:#C8D9E8;color:#0C447C;font-weight:500;font-size:13px;">
         🚌 إضافة حافلة (باصات إضافية)
       </button>
 
@@ -2120,7 +2125,7 @@
       <div style="margin-top:20px;border-top:2px solid var(--border);padding-top:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="font-size:14px;font-weight:600;color:var(--amber);display:flex;align-items:center;gap:6px;">🏷 الخصومات</div>
-          <button class="btn-sm" id="disc-toggle-btn" onclick="toggleDiscountForm()" style="background:var(--amber);border-color:var(--amber);color:#fff;font-weight:500;font-size:12px;">+ إضافة خصم</button>
+          <button class="btn-sm det-edit-only" id="disc-toggle-btn" onclick="toggleDiscountForm()" style="background:var(--amber);border-color:var(--amber);color:#fff;font-weight:500;font-size:12px;">+ إضافة خصم</button>
         </div>
 
         <!-- قائمة الخصومات المسجّلة -->
@@ -2129,7 +2134,7 @@
         </div>
 
         <!-- نموذج إضافة خصم (مخفي افتراضياً) -->
-        <div id="discount-form-wrap" style="display:none;background:var(--amber-light);border:1px solid #F5DFA0;border-radius:12px;padding:16px;">
+        <div id="discount-form-wrap" class="det-edit-only" style="display:none;background:var(--amber-light);border:1px solid #F5DFA0;border-radius:12px;padding:16px;">
           <div style="font-size:13px;font-weight:600;color:var(--amber);margin-bottom:14px;">تسجيل خصم جديد</div>
 
           <div class="form-group" style="margin-bottom:12px;">
@@ -3019,7 +3024,7 @@ function renderAlertMiniList(elId, list, opts) {
   const el = document.getElementById(elId);
   if (!el) return;
   el.innerHTML = list.length ? list.map(c => `
-    <div style="padding:10px 14px;background:${opts.bg};border-radius:8px;border:1px solid ${opts.border};cursor:pointer;" onclick="openContractDetail(${c.id})">
+    <div style="padding:10px 14px;background:${opts.bg};border-radius:8px;border:1px solid ${opts.border};cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
       <div style="font-size:13px;font-weight:500;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.displayId||c.id}</span></div>
       <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${esc(c.axis)||'—'} · ${c.buses||0} حافلة</div>
       <div style="font-size:11px;color:${opts.dateColor};margin-top:4px;font-weight:500;">${opts.dateLabel}: ${opts.dateField(c)}</div>
@@ -3059,7 +3064,7 @@ window.renderAlerts = function() {
       const paid = (c.originalTotal||c.total||0) - (c.rem||0);
       const pct  = c.total>0 ? Math.round(paid/c.total*100) : 0;
       return `
-      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px;background:var(--red-light);border-radius:8px;border:1px solid #F5C6C2;cursor:pointer;" onclick="openContractDetail(${c.id})">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px;background:var(--red-light);border-radius:8px;border:1px solid #F5C6C2;cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
         <div style="font-size:22px;">⚠️</div>
         <div style="flex:1;">
           <div style="font-weight:500;font-size:13px;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
@@ -3084,7 +3089,7 @@ window.renderAlerts = function() {
         ? `${esc(c.axis)} | سعر غير محدد`
         : `${esc(c.axis)} | يبدأ ${c.start} | ${c.buses||0} حافلة`;
       return `
-      <div style="padding:10px 14px;background:var(--amber-light);border-radius:8px;border:1px solid #F5DFA0;cursor:pointer;" onclick="openContractDetail(${c.id})">
+      <div style="padding:10px 14px;background:var(--amber-light);border-radius:8px;border:1px solid #F5DFA0;cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
         <div style="font-size:13px;font-weight:500;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
         <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${sub}</div>
         <span class="badge ${statusBadge[badge]||'badge-amber'}" style="margin-top:6px;display:inline-block;">${badge}</span>
@@ -4041,10 +4046,18 @@ let activeContractId = null;
 const paymentsLog = []; // { contractId, amount, method, note, date }
 const invoicesLog = []; // { id, contractId, fromStr, toStr, daysInPeriod, dailyRate, amount, savedAt }
 
-window.openContractDetail = function(id) {
+window.openContractDetail = function(id, readOnly) {
   const c = contracts.find(x => x.id === id);
   if (!c) return;
   activeContractId = id;
+
+  // وضع القراءة فقط: يُفرض صراحة من المستدعي (true/false)، أو يُحافَظ على الوضع الحالي
+  // لو النافذة أصلاً مفتوحة (تحديث بعد عملية دفع/خصم مثلاً) بدون تغييره
+  const detailOverlayEl = document.getElementById('detail-overlay');
+  if (readOnly === undefined) {
+    readOnly = detailOverlayEl ? detailOverlayEl.classList.contains('readonly-mode') : false;
+  }
+  if (detailOverlayEl) detailOverlayEl.classList.toggle('readonly-mode', !!readOnly);
 
   const paid = c.total - c.rem;
   const pct  = c.total > 0 ? Math.round(paid / c.total * 100) : 0;
@@ -5298,7 +5311,7 @@ function renderContractPulse() {
   box.innerHTML = shown.length ? shown.map(({c,pct}) => {
     const ringColor = pct>=100 ? 'var(--green-acc)' : pct>=50 ? 'var(--gold)' : 'var(--red)';
     return `
-    <div class="rpt-ccard" onclick="openContractDetail(${c.id})" title="اضغط لعرض تفاصيل العقد">
+    <div class="rpt-ccard" onclick="openContractDetail(${c.id}, true)" title="اضغط لعرض تفاصيل العقد">
       <div class="rpt-cring" style="--ring-color:${ringColor};" data-ring-target="${pct}"><b>${pct}%</b></div>
       <div class="rpt-ctxt">
         <div class="name">${esc(c.client||c.hotel)}</div>
@@ -5465,7 +5478,7 @@ function renderOpsContractCards(all) {
   box.innerHTML = list.length ? list.map(c => {
     const pctDays = c.days ? Math.min(100, Math.round(c.days/60*100)) : 0;
     return `
-    <div class="rpt-ccard" onclick="openContractDetail(${c.id})" title="اضغط لعرض تفاصيل العقد">
+    <div class="rpt-ccard" onclick="openContractDetail(${c.id}, true)" title="اضغط لعرض تفاصيل العقد">
       <div class="rpt-cring" style="--ring-color:var(--gold);" data-ring-target="${pctDays}"><b>${c.buses||0}</b></div>
       <div class="rpt-ctxt">
         <div class="name">${esc(c.client||c.hotel)}</div>
@@ -5538,7 +5551,13 @@ window.renderReports = function() {
   /* ─── OPERATIONS ─── */
   const totalBuses=all.reduce((s,c)=>s+c.buses,0);
   const totalDays =all.reduce((s,c)=>s+c.days,0);
-  const activeHotelsCount = new Set(all.filter(c=>c.buses>0).map(c=>c.hotel)).size;
+  // فنادق نشطة = فقط العقود اللي فعلاً شغّالة الآن (بدأت وما انتهت) — تستثني العقود المنتهية
+  const opsToday = new Date(); opsToday.setHours(0,0,0,0);
+  const activeHotelsCount = new Set(all.filter(c => {
+    if (!(c.buses>0)) return false;
+    const s = parseDate(c.start), e = parseDate(c.end);
+    return (!s || s <= opsToday) && (!e || e >= opsToday);
+  }).map(c=>c.hotel)).size;
   renderOpsBento(totalBuses, totalDays, all.filter(c=>c.buses>0).length, all.length, activeHotelsCount);
 
   const axisMap={};
@@ -5922,7 +5941,7 @@ function renderDetailDiscounts(id) {
           ${d.note?`<span style="font-size:11px;color:var(--ink-3);">📝 ${esc(d.note)}</span>`:''}
         </div>
       </div>
-      <button class="del-btn" onclick="deleteDiscount(${d.did})" style="flex-shrink:0;margin-top:1px;">حذف</button>
+      <button class="del-btn det-edit-only" onclick="deleteDiscount(${d.did})" style="flex-shrink:0;margin-top:1px;">حذف</button>
     </div>`;
   }).join('');
 }
@@ -5930,8 +5949,8 @@ function renderDetailDiscounts(id) {
 /* ══ FLOWS (حافلات إضافية) — باصات إضافية، سجل مستقل عن إجمالي/متبقي العقد ══ */
 /* patch openContractDetail to render discounts too */
 const _origOpenDetail = window.openContractDetail;
-window.openContractDetail = function(id) {
-  _origOpenDetail(id);
+window.openContractDetail = function(id, readOnly) {
+  _origOpenDetail(id, readOnly);
   renderDetailDiscounts(id);
   const dfw = document.getElementById('discount-form-wrap');
   const dtb = document.getElementById('disc-toggle-btn');
@@ -6750,8 +6769,8 @@ function paintTodayCard(TARGET, ids) {
     return s && s.getTime() === TARGET.getTime();
   });
 
-  // ending within 7 days from TARGET
-  const soonMs = 7 * 86400000;
+  // تنتهي قريباً: خلال 3 أيام أو أقل من التاريخ المعروض
+  const soonMs = 3 * 86400000;
   const ending = contracts.filter(c => {
     const e = parseDate(c.end);
     if (!e) return false;
@@ -6803,7 +6822,7 @@ function paintTodayCard(TARGET, ids) {
         border:1px solid ${isNew ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.12)'};
         border-radius:8px;padding:8px 14px;
         display:flex;align-items:center;gap:10px;cursor:pointer;"
-        onclick="openContractDetail(${c.id})">
+        onclick="openContractDetail(${c.id}, true)">
         <div style="min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-size:13px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.client||c.hotel)}</span>
@@ -10176,7 +10195,7 @@ function renderFlowList(contractId) {
             ${f.note ? `<span style="font-size:11px;color:var(--ink-3);">📝 ${esc(f.note)}</span>` : ''}
           </div>
         </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
+        <div class="det-edit-only" style="display:flex;gap:4px;flex-shrink:0;">
           <button class="btn-sm" onclick="window.toggleFlowDiscount(${f.fid})" style="font-size:11px;padding:4px 8px;background:var(--amber);border-color:var(--amber);color:#fff;">🏷 خصم</button>
           <button class="del-btn" onclick="window.deleteFlow(${f.fid})">حذف</button>
         </div>
@@ -10188,11 +10207,11 @@ function renderFlowList(contractId) {
             <span style="color:var(--amber);font-weight:600;">🏷 ${d.days} يوم · ${esc(d.reason)}</span>
             <span style="color:var(--ink-3);">${d.amount.toLocaleString()} ر (تشغيل ${(d.opDisc||0).toLocaleString()} + محطة ${(d.rnDisc||0).toLocaleString()})</span>
             <span style="color:var(--ink-3);">📅 ${d.date}</span>
-            <button class="del-btn" onclick="window.deleteFlowDiscount(${d.fdid})" style="margin-right:auto;font-size:10px;padding:2px 6px;">حذف</button>
+            <button class="del-btn det-edit-only" onclick="window.deleteFlowDiscount(${d.fdid})" style="margin-right:auto;font-size:10px;padding:2px 6px;">حذف</button>
           </div>`).join('')}
       </div>` : ''}
 
-      <div id="fl-disc-wrap-${f.fid}" style="display:none;margin-top:10px;padding:12px;background:var(--amber-light);border:1px solid #F5DFA0;border-radius:8px;">
+      <div id="fl-disc-wrap-${f.fid}" class="det-edit-only" style="display:none;margin-top:10px;padding:12px;background:var(--amber-light);border:1px solid #F5DFA0;border-radius:8px;">
         <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:10px;">خصم على هذه الحافلة (${f.buses} باص)</div>
         <div class="form-group" style="margin-bottom:8px;">
           <label class="form-label">سبب الخصم <span>*</span></label>
