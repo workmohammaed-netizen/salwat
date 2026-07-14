@@ -1114,6 +1114,7 @@
         </tbody>
       </table>
     </div>
+    <div id="contracts-pagination" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:16px 0 4px;"></div>
   </div>
 </div>
 
@@ -1972,7 +1973,7 @@
         <div class="form-section-label">التواريخ والتشغيل</div>
         <div class="form-group">
           <label class="form-label">تاريخ البداية</label>
-          <input class="form-input" id="e-start" type="date" onchange="updateEditCalc()">
+          <input class="form-input" id="e-start" type="date" onchange="updateEditCalc(); document.getElementById('e-end').min = this.value;">
         </div>
         <div class="form-group">
           <label class="form-label">تاريخ النهاية</label>
@@ -2266,7 +2267,7 @@
 
         <div class="form-group">
           <label class="form-label">تاريخ البداية <span>*</span></label>
-          <input class="form-input" id="f-start" type="date" onchange="updateCalc()">
+          <input class="form-input" id="f-start" type="date" onchange="updateCalc(); document.getElementById('f-end').min = this.value;">
         </div>
         <div class="form-group">
           <label class="form-label">تاريخ النهاية <span>*</span></label>
@@ -3096,8 +3097,13 @@ function refreshAllStatuses() {
   contracts.forEach(c => { c.status = computeContractStatus(c); });
 }
 
+const CONTRACTS_PAGE_SIZE = 15;
+let contractsCurrentPage = 1;
+let lastFilteredContracts = [];
+
 window.renderContracts = function(data) {
   refreshAllStatuses();
+  lastFilteredContracts = data;
   const tbody = document.getElementById('contracts-body');
 
   const parents  = data.filter(c => !c.parentId).sort((a, b) => b.id - a.id);
@@ -3109,7 +3115,13 @@ window.renderContracts = function(data) {
   });
   children.filter(ch => !parents.find(p => p.id === ch.parentId)).forEach(ch => sorted.push({ c: ch, isChild: true }));
 
-  tbody.innerHTML = sorted.map(({ c, isChild }) => {
+  const totalPages = Math.max(1, Math.ceil(sorted.length / CONTRACTS_PAGE_SIZE));
+  if (contractsCurrentPage > totalPages) contractsCurrentPage = totalPages;
+  if (contractsCurrentPage < 1) contractsCurrentPage = 1;
+  const startIdx = (contractsCurrentPage - 1) * CONTRACTS_PAGE_SIZE;
+  const pageItems = sorted.slice(startIdx, startIdx + CONTRACTS_PAGE_SIZE);
+
+  tbody.innerHTML = pageItems.map(({ c, isChild }) => {
     const paid = c.total - c.rem;
     const pct  = c.total > 0 ? Math.round(paid / c.total * 100) : 0;
     const rowStyle = isChild
@@ -3152,7 +3164,41 @@ window.renderContracts = function(data) {
     </tr>`;
   }).join('');
   document.getElementById('contract-count').textContent = data.length;
+  renderContractsPagination(totalPages);
 }
+
+// أزرار التنقل بين صفحات جدول العقود (15 عقد بالصفحة)
+function renderContractsPagination(totalPages) {
+  const box = document.getElementById('contracts-pagination');
+  if (!box) return;
+  if (totalPages <= 1) { box.innerHTML = ''; return; }
+  const btn = (label, page, opts) => `<button class="btn-sm ${opts?.active?'btn-primary':''}" ${opts?.disabled?'disabled':''} onclick="goToContractsPage(${page})">${label}</button>`;
+  let pagesToShow = [];
+  for (let i = 1; i <= totalPages; i++) pagesToShow.push(i);
+  if (totalPages > 7) {
+    const start = Math.max(2, contractsCurrentPage - 2);
+    const end   = Math.min(totalPages - 1, contractsCurrentPage + 2);
+    pagesToShow = [1];
+    if (start > 2) pagesToShow.push('…');
+    for (let i = start; i <= end; i++) pagesToShow.push(i);
+    if (end < totalPages - 1) pagesToShow.push('…');
+    pagesToShow.push(totalPages);
+  }
+  let html = btn('‹ السابق', contractsCurrentPage - 1, { disabled: contractsCurrentPage === 1 });
+  pagesToShow.forEach(p => {
+    html += p === '…'
+      ? `<span style="padding:0 6px;color:var(--ink-3);">…</span>`
+      : btn(String(p), p, { active: p === contractsCurrentPage });
+  });
+  html += btn('التالي ›', contractsCurrentPage + 1, { disabled: contractsCurrentPage === totalPages });
+  html += `<span style="font-size:11px;color:var(--ink-3);margin-right:10px;">صفحة ${contractsCurrentPage} من ${totalPages}</span>`;
+  box.innerHTML = html;
+}
+
+window.goToContractsPage = function(page) {
+  contractsCurrentPage = page;
+  renderContracts(lastFilteredContracts);
+};
 
 window.filterContracts = function() {
   const axis    = document.getElementById('filter-axis').value;
@@ -3163,6 +3209,7 @@ window.filterContracts = function() {
     (!carrier || c.carrier === carrier) &&
     (!status  || c.status.includes(status))
   );
+  contractsCurrentPage = 1;
   renderContracts(filtered);
 }
 
@@ -3583,6 +3630,9 @@ window.openModal = function(parentId) {
   }
   populateHotelDropdown();
   onAxisChange();
+  const fStartEl = document.getElementById('f-start');
+  const fEndEl   = document.getElementById('f-end');
+  if (fEndEl) fEndEl.min = fStartEl && fStartEl.value ? fStartEl.value : '';
   document.getElementById('f-distributed-payment').checked = false;
   const hint = document.getElementById('modal-parent-hint');
   if (hint) {
@@ -6574,6 +6624,7 @@ window.openEditContract = function(id) {
   const toISO = s => { if(!s||!s.includes('/')) return ''; const [d,m,y]=s.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; };
   document.getElementById('e-start').value = toISO(c.start);
   document.getElementById('e-end').value   = toISO(c.end);
+  document.getElementById('e-end').min = toISO(c.start);
   updateEditCalc();
   // reset discount form
   const dfw = document.getElementById('discount-form-wrap');
@@ -9834,7 +9885,7 @@ window.saveDistribution = async function() {
         <div class="form-grid" style="grid-template-columns:1fr 1fr;">
           <div class="form-group">
             <label class="form-label">تاريخ البداية <span>*</span></label>
-            <input class="form-input" id="fl-start" type="date" style="background:var(--white);" oninput="window.onFlowCalc()">
+            <input class="form-input" id="fl-start" type="date" style="background:var(--white);" oninput="window.onFlowCalc(); document.getElementById('fl-end').min = this.value;">
           </div>
           <div class="form-group">
             <label class="form-label">تاريخ النهاية <span>*</span></label>
@@ -9848,11 +9899,10 @@ window.saveDistribution = async function() {
         </div>
         <!-- المبلغ المحسوب -->
         <div id="fl-calc-box" style="display:none;background:#DCE9F5;border:1px solid #C8D9E8;border-radius:8px;padding:9px 13px;margin:8px 0;font-size:12px;color:#0C447C;"></div>
-        <!-- حقل المبلغ للقراءة فقط -->
+        <!-- حقل المبلغ — يدوي بالكامل، صندوق الحساب أعلاه يعرض اقتراح فقط -->
         <div class="form-group" style="margin-top:4px;">
-          <label class="form-label">المبلغ (يُحسب تلقائياً)</label>
-          <input class="form-input" id="fl-amount" type="text" readonly tabindex="-1"
-            style="background:var(--sand);color:var(--green-dark);font-weight:600;cursor:default;" placeholder="0">
+          <label class="form-label">المبلغ (ريال) <span>*</span></label>
+          <input class="form-input" id="fl-amount" type="number" min="0" step="any" placeholder="أدخل المبلغ يدوياً">
         </div>
         <div class="form-group">
           <label class="form-label">ملاحظة</label>
@@ -9890,17 +9940,15 @@ window.onFlowCalc = function() {
   const opCost = buses * price * days;
   const rnCost = buses * rental * days;
   const amount = opCost + rnCost;
+  // ملاحظة: المبلغ صار حقلاً يدوياً بالكامل — هذا الصندوق اقتراح مرجعي فقط ولا يعبّئ الحقل تلقائياً
   const calcBox = document.getElementById('fl-calc-box');
-  const amtEl   = document.getElementById('fl-amount');
   if (buses > 0 && days > 0 && (price > 0 || rental > 0)) {
-    amtEl.value = amount.toLocaleString();
-    let calcText = `${buses} باص × ${days} يوم × (تشغيل ${price.toLocaleString()}`;
+    let calcText = `اقتراح محسوب: ${buses} باص × ${days} يوم × (تشغيل ${price.toLocaleString()}`;
     if (rental > 0) calcText += ` + محطة ${rental.toLocaleString()}`;
     calcText += `) = ${amount.toLocaleString()} ريال`;
     calcBox.textContent = calcText;
     calcBox.style.display = 'block';
   } else {
-    amtEl.value = '';
     calcBox.style.display = 'none';
   }
 };
@@ -10135,6 +10183,7 @@ window.openFlowModal = function() {
   const today = new Date().toISOString().slice(0,10);
   document.getElementById('fl-start').value  = today;
   document.getElementById('fl-end').value    = today;
+  document.getElementById('fl-end').min      = today;
   document.getElementById('fl-buses').value  = '';
   document.getElementById('fl-shift').value  = 'كاملة';
   document.getElementById('fl-amount').value = '';
@@ -10165,15 +10214,16 @@ window.saveFlow = async function() {
   const days  = flowDays(start, end);
   const price  = c.price  || 0;
   const rental = c.rental || 0;
+  // opCost/rnCost يبقيان مرجعاً للتفصيل بالسجل فقط — المبلغ الفعلي يُدخله المستخدم يدوياً بالكامل
   const opCost = buses * price * days;
   const rnCost = buses * rental * days;
-  const amount = opCost + rnCost;
+  const amount = parseFloat(document.getElementById('fl-amount').value) || 0;
 
   if (!start)           { highlight('fl-start'); showToast('⚠ أدخل تاريخ البداية');  return; }
   if (!end)             { highlight('fl-end');   showToast('⚠ أدخل تاريخ النهاية');  return; }
   if (days <= 0)        { highlight('fl-end');   showToast('⚠ تاريخ النهاية يجب أن يلي البداية'); return; }
   if (!buses || buses <= 0) { highlight('fl-buses'); showToast('⚠ أدخل عدد الباصات'); return; }
-  if (price <= 0 && rental <= 0) { showToast('⚠ هذا العقد لا يوجد له سعر يومي أو رسوم محطة'); return; }
+  if (amount <= 0)       { highlight('fl-amount'); showToast('⚠ أدخل المبلغ'); return; }
 
   const fmt = d => d.split('-').reverse().join('/');
   const now  = new Date().toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -10446,6 +10496,26 @@ window.exportToPDF = function(title, columns, rows, subtitle) {
   win.document.close();
   showToast('✓ تم تجهيز ملف PDF للطباعة');
 };
+
+// تأخير بسيط (0.7 ثانية) بين ضغطات أزرار "الإضافة/الحفظ" تحديداً — يمنع تكرار
+// الإدخال لو المستخدم ضغط الزر أكثر من مرة بسرعة أثناء انتظار حفظ الطلب بقاعدة البيانات.
+// التصفح والتنقل العادي بالموقع غير متأثر إطلاقاً — هذا يشمل فقط أزرار الحفظ/الإضافة.
+function debounceClick(fn, delayMs) {
+  let lastCall = 0;
+  return function(...args) {
+    const now = Date.now();
+    if (now - lastCall < delayMs) return;
+    lastCall = now;
+    return fn.apply(this, args);
+  };
+}
+[
+  'saveContract','savePayment','saveDiscount','saveFlow','saveFlowDiscount','saveInvoice',
+  'savePaymentRecord','confirmInstalmentPaid','confirmEditInstalment','saveDistribution',
+  'saveDbItem','saveNewHotelInline','doRegister',
+].forEach(name => {
+  if (typeof window[name] === 'function') window[name] = debounceClick(window[name], 700);
+});
 
 // يستعيد جلسة Supabase Auth تلقائياً لو المستخدم مسجّل دخوله مسبقاً في هذا المتصفح
 // (تحميل بيانات الموقع يبدأ من داخل applyLogin نفسها بعد نجاح الاستعادة)
