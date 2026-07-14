@@ -9267,6 +9267,66 @@ window.clearOpsFilters = function() {
   renderOperations();
 };
 
+/* ── نافذة تفاصيل تشغيلية فقط (بدون أي بيانات مالية) — تُفتح من صفحة التشغيل تحديداً ── */
+(function injectOpsDetailModal() {
+  const tpl = `
+<div class="modal-overlay" id="ops-detail-overlay" onclick="if(event.target===this)window.closeOpsDetail()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="ops-detail-title">تفاصيل تشغيلية</div>
+        <div id="ops-detail-meta" style="font-size:12px;color:var(--ink-3);margin-top:3px;">—</div>
+      </div>
+      <button class="modal-close" onclick="window.closeOpsDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="ops-detail-body"></div>
+  </div>
+</div>`;
+  document.body.insertAdjacentHTML('beforeend', tpl);
+})();
+
+window.closeOpsDetail = function() {
+  const el = document.getElementById('ops-detail-overlay');
+  if (el) el.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+window.openOperationsDetail = function(id) {
+  const c = contracts.find(x => x.id === id);
+  if (!c) return;
+  const myFlows   = flowsLog.filter(f => f.contractId === id);
+  const flowBuses = myFlows.reduce((s,f) => s + (f.buses||0), 0);
+  document.getElementById('ops-detail-title').textContent = c.client || c.hotel || '—';
+  document.getElementById('ops-detail-meta').textContent  = `عقد #${c.displayId || c.id}`;
+
+  const row = (label, value) => `
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:12px;color:var(--ink-3);">${label}</span>
+      <span style="font-size:13px;font-weight:500;color:var(--ink);">${value}</span>
+    </div>`;
+
+  let html = '';
+  html += row('الفندق', esc(c.hotel) || '—');
+  html += row('المحور', esc(c.axis) || '—');
+  html += row('نقطة الفرز', esc(c.point) || '—');
+  html += row('الناقل', esc(c.carrier) || '—');
+  html += row('تاريخ البداية', c.start || '—');
+  html += row('تاريخ النهاية', c.end || '—');
+  html += row('المدة', `${c.days || 0} يوم`);
+  html += row('عدد الباصات الأساسية', `${c.buses || 0}`);
+  html += row('عدد الباصات الإضافية', `${flowBuses}`);
+  if (myFlows.length) {
+    html += `<div style="margin-top:10px;">
+      <div style="font-size:11px;color:var(--ink-3);margin-bottom:6px;">تفاصيل الحافلات الإضافية</div>
+      ${myFlows.map(f => `<div style="font-size:12px;padding:6px 10px;background:var(--sand);border-radius:6px;margin-bottom:4px;">${f.buses} حافلة · ${f.start} — ${f.end}</div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('ops-detail-body').innerHTML = html;
+  document.getElementById('ops-detail-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
 window.renderOperations = function() {
   const tbody = document.getElementById('ops-tbody');
   const kpis  = document.getElementById('ops-kpis');
@@ -9478,7 +9538,7 @@ window.renderOperations = function() {
     const hasDisc = totalDiscBuses > 0;
     const rowBg = hasDisc ? 'background:var(--amber-light);' : flowBuses > 0 ? 'background:#F5F9FD;' : '';
     return `
-    <tr style="${rowBg}cursor:pointer;" onclick="openContractDetail(${c.id})" title="اضغط لعرض تفاصيل العقد: ${esc(c.hotel)} · ${esc(c.axis)} · ${esc(c.point)||'—'}">
+    <tr style="${rowBg}cursor:pointer;" onclick="openOperationsDetail(${c.id})" title="اضغط لعرض التفاصيل التشغيلية: ${esc(c.hotel)} · ${esc(c.axis)} · ${esc(c.point)||'—'}">
       <td style="color:var(--ink-3);font-size:12px;font-weight:500;">#${c.displayId || c.id}</td>
       <td><div class="hotel-name">${esc(c.client)||'—'}</div></td>
       <td>${esc(c.hotel)}</td>
@@ -9518,7 +9578,7 @@ window.renderOperations = function() {
     } else {
       if (nsEmpty) nsEmpty.style.display = 'none';
       nsBody.innerHTML = notStartedList.map(c => `
-        <tr style="cursor:pointer;" onclick="openContractDetail(${c.id})" title="اضغط لعرض تفاصيل العقد: ${esc(c.hotel)} · ${esc(c.axis)} · ${esc(c.point)||'—'}">
+        <tr style="cursor:pointer;" onclick="openOperationsDetail(${c.id})" title="اضغط لعرض التفاصيل التشغيلية: ${esc(c.hotel)} · ${esc(c.axis)} · ${esc(c.point)||'—'}">
           <td style="color:var(--ink-3);font-size:12px;font-weight:500;">#${c.displayId || c.id}</td>
           <td><div class="hotel-name">${esc(c.client)||'—'}</div></td>
           <td>${esc(c.hotel)}</td>
