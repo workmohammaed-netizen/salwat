@@ -1882,6 +1882,7 @@
               <th>تاريخ البداية</th>
               <th>تاريخ النهاية</th>
               <th>الفترة</th>
+              <th>الأيام المتبقية</th>
               <th>وضع التشغيل</th>
             </tr>
           </thead>
@@ -9410,6 +9411,13 @@ window.openOperationsDetail = function(id) {
   html += row('تاريخ البداية', c.start || '—');
   html += row('تاريخ النهاية', c.end || '—');
   html += row('المدة', `${c.days || 0} يوم`);
+  const todayOps = new Date(); todayOps.setHours(0,0,0,0);
+  const endOps = parseDate(c.end);
+  const remDays = endOps ? Math.round((endOps - todayOps) / 86400000) : null;
+  if (remDays !== null) {
+    const remColor = remDays < 0 ? 'var(--ink-3)' : remDays <= 3 ? 'var(--red)' : remDays <= 7 ? 'var(--amber)' : 'var(--green-dark)';
+    html += row('الأيام المتبقية', `<b style="color:${remColor};">${remDays >= 0 ? remDays : 'انتهى'}</b>${remDays >= 0 ? ' من ' + (c.days || 0) : ''}`);
+  }
   html += row('عدد الباصات الأساسية', `${c.buses || 0}`);
   html += row('عدد الباصات الإضافية', `${flowBuses}`);
   if (myFlows.length) {
@@ -9632,6 +9640,13 @@ window.renderOperations = function() {
       periodCell += `<div style="font-size:10px;color:#0C447C;margin-top:2px;">🔵 حافلة إضافية: ${fp}</div>`;
     }
 
+    // الأيام المتبقية من مدة العقد (نسبةً لليوم المعروض حالياً) — تتناقص يوماً بيوم حتى تصل صفر يوم الانتهاء
+    let remDaysCell = '<span style="color:var(--ink-3);">—</span>';
+    if (isActive && daysToEnd !== null && daysToEnd >= 0) {
+      const remColor = daysToEnd <= 3 ? 'var(--red)' : daysToEnd <= 7 ? 'var(--amber)' : 'var(--green-dark)';
+      remDaysCell = `<span style="font-weight:700;color:${remColor};">${daysToEnd}</span> <span style="font-size:10px;color:var(--ink-3);">من ${c.days || 0}</span>`;
+    }
+
     const hasDisc = totalDiscBuses > 0;
     const rowBg = hasDisc ? 'background:var(--amber-light);' : flowBuses > 0 ? 'background:#F5F9FD;' : '';
     return `
@@ -9648,6 +9663,7 @@ window.renderOperations = function() {
       <td style="font-size:12px;">${c.start}</td>
       <td style="font-size:12px;">${c.end}</td>
       <td style="font-size:11px;">${periodCell}</td>
+      <td>${remDaysCell}</td>
       <td>${opBadge}</td>
     </tr>`;
   }).join('');
@@ -9734,7 +9750,7 @@ window.exportOperations = function(type) {
   }
   allRows.sort((a,b) => b.id - a.id);
 
-  const columns = ['#','العميل','الفندق','المحور','نقطة الفرز','الناقل','أمر الإيجار','حافلات أساسي','خصم اليوم','حافلات إضافية','الإجمالي','البداية','النهاية'];
+  const columns = ['#','العميل','الفندق','المحور','نقطة الفرز','الناقل','أمر الإيجار','حافلات أساسي','خصم اليوم','حافلات إضافية','الإجمالي','البداية','النهاية','الأيام المتبقية'];
   const expTargetISO = `${TARGET.getFullYear()}-${String(TARGET.getMonth()+1).padStart(2,'0')}-${String(TARGET.getDate()).padStart(2,'0')}`;
   const rows = allRows.map(c => {
     const isActive = list.some(x=>x.id===c.id);
@@ -9748,7 +9764,9 @@ window.exportOperations = function(type) {
     });
     const discDays = dayDisc.reduce((s,d) => s + (d.days||0), 0);
     const discInfo = discDays > 0 ? `خصم ${discDays} يوم (${dayDisc.map(d=>d.reason).join('، ')})` : '';
-    return [c.id, c.client||'—', c.hotel, c.axis, c.point||'—', c.carrier||'—', c.rentalOrder||'—', baseB, discInfo, flowB||'', baseB+flowB, c.start, c.end];
+    const e = parseDate(c.end);
+    const dl = isActive && e ? Math.round((e - TARGET) / 86400000) : null;
+    return [c.id, c.client||'—', c.hotel, c.axis, c.point||'—', c.carrier||'—', c.rentalOrder||'—', baseB, discInfo, flowB||'', baseB+flowB, c.start, c.end, dl!==null&&dl>=0?dl:'—'];
   });
 
   const dateStr = TARGET.toLocaleDateString('ar-SA',{year:'numeric',month:'long',day:'numeric'});
