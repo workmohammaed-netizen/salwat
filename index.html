@@ -6918,31 +6918,74 @@ function paintTodayCard(TARGET, ids) {
     }).join('')}
   ` : `<div style="grid-column:1/-1;font-size:13px;color:rgba(255,255,255,0.4);padding:8px 0;">لا توجد عقود نشطة ${dayLabel}</div>`;
 
-  // ending soon — قائمة عمودية مرتبة حسب الأقرب انتهاءً (الأكثر إلحاحاً أولاً) بدل فقاعات مبعثرة، مع سكرول داخلي لو طالت
+  // ending soon — مجمّعة حسب العميل (بدل صف لكل عقد)، والضغط على العميل يفتح قائمة عقوده التي تنتهي قريباً
+  const endingByClient = {};
+  ending.forEach(c => {
+    const key = c.client || c.hotel || 'غير محدد';
+    (endingByClient[key] = endingByClient[key] || []).push(c);
+  });
+  const endingClientNames = Object.keys(endingByClient).sort((a,b) => {
+    const da = Math.min(...endingByClient[a].map(c => parseDate(c.end).getTime()));
+    const db = Math.min(...endingByClient[b].map(c => parseDate(c.end).getTime()));
+    return da - db;
+  });
+
   el(ids.endingList).innerHTML = ending.length ? `
     <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">تنتهي قريباً (${ending.length})</div>
-    <div style="display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto;padding-left:2px;">
-      ${ending.map(c => {
-        const daysLeft = Math.round((parseDate(c.end) - TARGET) / 86400000);
-        const urgent = daysLeft <= 2;
-        const badgeText = daysLeft === 0 ? 'اليوم!' : daysLeft === 1 ? 'غداً' : `${daysLeft} أيام`;
-        return `<div onclick="openContractDetail(${c.id}, true)" title="اضغط لعرض تفاصيل العقد" style="
-          background:${urgent ? 'rgba(192,57,43,0.18)' : 'rgba(212,136,10,0.14)'};
-          border:1px solid ${urgent ? 'rgba(192,57,43,0.35)' : 'rgba(212,136,10,0.3)'};
-          border-radius:8px;padding:8px 12px;cursor:pointer;
-          display:flex;align-items:center;gap:10px;">
-          <span style="font-size:13px;flex-shrink:0;">${urgent ? '🔴' : '🟡'}</span>
-          <div style="min-width:0;flex:1;">
-            <div style="font-size:12.5px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.client||c.hotel)}</div>
-            <div style="font-size:10.5px;color:rgba(255,255,255,0.45);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(c.hotel)} · ينتهي ${c.end}</div>
-          </div>
-          <div style="flex-shrink:0;font-size:11px;font-weight:700;color:${urgent ? '#F97316' : 'var(--gold)'};background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:12px;">
-            ${badgeText}
-          </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      ${endingClientNames.map(name => {
+        const list = endingByClient[name];
+        const soonest = Math.min(...list.map(c => Math.round((parseDate(c.end) - TARGET) / 86400000)));
+        const urgent = soonest <= 2;
+        const open = rptEndingSoonOpenClient === name;
+        return `<div onclick="toggleEndingSoonClient('${escJs(name)}')" style="
+          background:${open ? (urgent ? 'rgba(192,57,43,0.34)' : 'rgba(212,136,10,0.3)') : (urgent ? 'rgba(192,57,43,0.18)' : 'rgba(212,136,10,0.14)')};
+          border:1px solid ${urgent ? 'rgba(192,57,43,0.4)' : 'rgba(212,136,10,0.35)'};
+          border-radius:8px;padding:8px 14px;cursor:pointer;
+          display:flex;align-items:center;gap:8px;font-size:12.5px;color:#fff;transition:background .15s;">
+          <span>${urgent ? '🔴' : '🟡'}</span>
+          <span style="font-weight:600;">${esc(name)}</span>
+          <span style="font-size:11px;color:rgba(255,255,255,0.5);">${list.length} عقد</span>
         </div>`;
       }).join('')}
-    </div>` : '';
+    </div>
+    <div id="${ids.endingList}-drill" style="margin-top:10px;"></div>` : '';
+
+  // قائمة عقود العميل المفتوح حالياً (من ضمن العقود التي تنتهي قريباً فقط)
+  const drillBox = document.getElementById(ids.endingList + '-drill');
+  if (drillBox) {
+    const openName = rptEndingSoonOpenClient;
+    if (!openName || !endingByClient[openName]) {
+      drillBox.innerHTML = '';
+    } else {
+      const list = endingByClient[openName].slice().sort((a,b) => parseDate(a.end) - parseDate(b.end));
+      drillBox.innerHTML = `
+        <div style="background:rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;">
+          ${list.map(c => {
+            const daysLeft = Math.round((parseDate(c.end) - TARGET) / 86400000);
+            const urgent = daysLeft <= 2;
+            const badgeText = daysLeft === 0 ? 'اليوم!' : daysLeft === 1 ? 'غداً' : `${daysLeft} أيام`;
+            return `<div onclick="openContractDetail(${c.id}, true)" title="اضغط لعرض تفاصيل العقد" style="
+              background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:7px;
+              padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:12px;flex-shrink:0;">${urgent ? '🔴' : '🟡'}</span>
+              <div style="min-width:0;flex:1;">
+                <div style="font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🏨 ${esc(c.hotel) || '—'}</div>
+                <div style="font-size:10.5px;color:rgba(255,255,255,0.45);margin-top:1px;">ينتهي ${c.end}</div>
+              </div>
+              <div style="flex-shrink:0;font-size:10.5px;font-weight:700;color:${urgent ? '#F97316' : 'var(--gold)'};background:rgba(255,255,255,0.08);padding:3px 9px;border-radius:10px;">${badgeText}</div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+  }
 }
+
+let rptEndingSoonOpenClient = null; // العميل المفتوح حالياً في قائمة "تنتهي قريباً" بالتقرير التشغيلي
+window.toggleEndingSoonClient = function(name) {
+  rptEndingSoonOpenClient = (rptEndingSoonOpenClient === name) ? null : name;
+  renderTodayCard();
+};
 
 function renderTodayCard() {
   const BASE = new Date();
