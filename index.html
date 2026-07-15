@@ -869,6 +869,32 @@
   .rpt-ctxt .meta  { font-size:10.5px; color:var(--ink-3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .rpt-ctxt .rem   { font-size:11px; font-weight:600; margin-top:4px; }
 
+  /* قوائم أسماء العملاء التفاعلية (تفاصيل العقود التشغيلية / متبقي أكثر من 50%) */
+  .rpt-client-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .rpt-client-chip {
+    display:flex; align-items:center; gap:7px; background:var(--sand); border:1px solid var(--border);
+    border-radius:20px; padding:8px 14px; font-size:12.5px; font-weight:600; color:var(--ink);
+    cursor:pointer; transition: background .15s, border-color .15s;
+  }
+  .rpt-client-chip:hover { border-color:var(--gold); }
+  .rpt-client-chip.open { background:var(--gold); border-color:var(--gold); color:#fff; }
+  .rpt-client-chip .cnt { font-size:11px; font-weight:500; color:var(--ink-3); }
+  .rpt-client-chip.open .cnt { color:rgba(255,255,255,.85); }
+  .rpt-client-drill { width:100%; margin-top:12px; background:var(--sand); border-radius:12px; padding:14px 16px; }
+  .rpt-client-drill-grp { margin-bottom:12px; }
+  .rpt-client-drill-grp:last-child { margin-bottom:0; }
+  .rpt-client-drill-grp-title { font-size:11.5px; font-weight:700; color:var(--ink-3); margin-bottom:8px; }
+  .rpt-client-drill-row {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--white); border:1px solid var(--border); border-radius:9px;
+    padding:9px 12px; margin-bottom:6px; cursor:pointer; transition: border-color .15s;
+  }
+  .rpt-client-drill-row:last-child { margin-bottom:0; }
+  .rpt-client-drill-row:hover { border-color:var(--gold); }
+  .rpt-client-drill-row .hotel { font-size:12px; font-weight:600; color:var(--ink); }
+  .rpt-client-drill-row .meta  { font-size:11px; color:var(--ink-3); margin-top:2px; }
+  .rpt-client-drill-empty { font-size:12px; color:var(--ink-3); text-align:center; padding:8px; }
+
   /* مفاتيح تبديل المقياس */
   .rpt-toggle { display:inline-flex; background: var(--sand); border-radius:20px; padding:3px; gap:2px; }
   .rpt-toggle button {
@@ -1602,7 +1628,8 @@
       <!-- تفاصيل العقود التشغيلية -->
       <div class="section-head"><div class="section-title">تفاصيل العقود التشغيلية</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-ops-contracts-body','تفاصيل العقود التشغيلية','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-ops-contracts-body','تفاصيل العقود التشغيلية','pdf')">⬇ PDF</button></div></div>
       <div class="card" style="padding:16px;">
-        <div class="rpt-contract-grid" id="rpt-ops-contract-grid"></div>
+        <div class="rpt-client-chips" id="rpt-ops-contract-grid"></div>
+        <div id="rpt-ops-contracts-drill"></div>
         <details class="rpt-rawtable" style="margin-top:14px;"><summary>📋 عرض البيانات كجدول للتصدير</summary>
           <div class="table-wrap">
             <table>
@@ -1615,13 +1642,17 @@
 
       <!-- عقود المتبقي فيها أكثر من 50% -->
       <div class="section-head"><div class="section-title">عقود المتبقي فيها أكثر من 50%</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-ops-highrem-body','عقود المتبقي فيها أكثر من 50%','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-ops-highrem-body','عقود المتبقي فيها أكثر من 50%','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الإجمالي</th><th>المتبقي</th><th>نسبة المتبقي</th><th>تاريخ النهاية</th></tr></thead>
-            <tbody id="rpt-ops-highrem-body"></tbody>
-          </table>
-        </div>
+      <div class="card" style="margin-bottom:20px;padding:16px;">
+        <div class="rpt-client-chips" id="rpt-ops-highrem-chips"></div>
+        <div id="rpt-ops-highrem-drill"></div>
+        <details class="rpt-rawtable" style="margin-top:14px;"><summary>📋 عرض البيانات كجدول للتصدير</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الإجمالي</th><th>المتبقي</th><th>نسبة المتبقي</th><th>تاريخ النهاية</th></tr></thead>
+              <tbody id="rpt-ops-highrem-body"></tbody>
+            </table>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -5081,6 +5112,46 @@ let rptCollectionMap = {};
 let rptAxisMap = {};
 let rptFinDrillMetric = null; // المقياس المفتوح حالياً في لوحة التفصيل المالية حسب العميل
 let rptOpsDrillMetric = null; // المقياس المفتوح حالياً في لوحة التفصيل التشغيلية حسب العميل
+let rptOpsContractsOpenClient = null; // العميل المفتوح حالياً في قائمة "تفاصيل العقود التشغيلية"
+let rptOpsHighRemOpenClient   = null; // العميل المفتوح حالياً في قائمة "عقود المتبقي فيها أكثر من 50%"
+
+/* يعرض عقود عميل معيّن (سارية/منتهية) أسفل اسمه — يُستخدم من قوائم أسماء العملاء بالتقرير التشغيلي */
+function renderClientOpsDrill(containerId, clientName) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  if (!clientName) { box.innerHTML = ''; return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  const list = contracts.filter(c => (c.client || c.hotel || 'غير محدد') === clientName);
+  const activeList = list.filter(c => { const e = parseDate(c.end); return !e || e >= today; });
+  const endedList  = list.filter(c => { const e = parseDate(c.end); return e && e < today; });
+  const row = (c) => `
+    <div class="rpt-client-drill-row" onclick="openContractDetail(${c.id}, true)" title="اضغط لعرض تفاصيل العقد">
+      <div>
+        <div class="hotel">🏨 ${esc(c.hotel) || '—'}</div>
+        <div class="meta">${esc(c.axis) || '—'} · ${esc(c.start) || '—'} → ${esc(c.end) || '—'}</div>
+      </div>
+      <div class="meta">${c.buses || 0} حافلة</div>
+    </div>`;
+  box.innerHTML = `
+    <div class="rpt-client-drill">
+      <div class="rpt-client-drill-grp">
+        <div class="rpt-client-drill-grp-title">عقود سارية (${activeList.length})</div>
+        ${activeList.length ? activeList.map(row).join('') : '<div class="rpt-client-drill-empty">لا توجد عقود سارية</div>'}
+      </div>
+      <div class="rpt-client-drill-grp">
+        <div class="rpt-client-drill-grp-title">عقود منتهية (${endedList.length})</div>
+        ${endedList.length ? endedList.map(row).join('') : '<div class="rpt-client-drill-empty">لا توجد عقود منتهية</div>'}
+      </div>
+    </div>`;
+}
+window.toggleOpsContractsClient = function(name) {
+  rptOpsContractsOpenClient = (rptOpsContractsOpenClient === name) ? null : name;
+  renderOpsContractCards(contracts);
+};
+window.toggleOpsHighRemClient = function(name) {
+  rptOpsHighRemOpenClient = (rptOpsHighRemOpenClient === name) ? null : name;
+  renderOpsHighRemClients(contracts.filter(c => c.total > 0 && c.rem / c.total > 0.5 && c.rem > 0));
+};
 
 /* تجميع أي قائمة عقود حسب اسم العميل مع مجموع قيمة مخصصة وعدد العقود */
 function groupByClient(list, valueFn) {
@@ -5476,24 +5547,24 @@ function renderOpsContractCards(all) {
   if (!box) return;
   const today = new Date(); today.setHours(0,0,0,0);
   // إخفاء العقود التي انتهى تشغيلها بالفعل (تاريخ النهاية أقدم من اليوم)
-  const list = all
-    .filter(c => { const e = parseDate(c.end); return !e || e >= today; })
-    .sort((a,b)=>(b.buses||0)-(a.buses||0))
-    .slice(0,24);
-  box.innerHTML = list.length ? list.map(c => {
-    const pctDays = c.days ? Math.min(100, Math.round(c.days/60*100)) : 0;
-    return `
-    <div class="rpt-ccard" onclick="openContractDetail(${c.id}, true)" title="اضغط لعرض تفاصيل العقد">
-      <div class="rpt-cring" style="--ring-color:var(--gold);" data-ring-target="${pctDays}"><b>${c.buses||0}</b></div>
-      <div class="rpt-ctxt">
-        <div class="name">${esc(c.client||c.hotel)}</div>
-        <div class="hotel" title="${esc(c.hotel)}">🏨 ${esc(c.hotel)||'—'}</div>
-        <div class="meta">${esc(c.axis)||'—'} · ${esc(c.carrier)||'—'}</div>
-        <div class="rem" style="color:var(--ink-3);">${c.days} يوم تشغيل</div>
-      </div>
-    </div>`;
-  }).join('') : '<div style="grid-column:1/-1;text-align:center;color:var(--ink-3);padding:20px;">لا توجد عقود</div>';
-  animateRings(box);
+  const list = all.filter(c => { const e = parseDate(c.end); return !e || e >= today; });
+  const names = groupByClient(list, ()=>0).sort((a,b)=>a.label.localeCompare(b.label,'ar'));
+  box.innerHTML = names.length ? names.map(n => `
+    <div class="rpt-client-chip${rptOpsContractsOpenClient===n.label?' open':''}" onclick="toggleOpsContractsClient('${escJs(n.label)}')">
+      <span>${esc(n.label)}</span><span class="cnt">${n.count} عقد</span>
+    </div>`).join('') : '<div style="color:var(--ink-3);padding:8px;">لا توجد عقود</div>';
+  renderClientOpsDrill('rpt-ops-contracts-drill', rptOpsContractsOpenClient);
+}
+
+function renderOpsHighRemClients(list) {
+  const box = document.getElementById('rpt-ops-highrem-chips');
+  if (!box) return;
+  const names = groupByClient(list, ()=>0).sort((a,b)=>a.label.localeCompare(b.label,'ar'));
+  box.innerHTML = names.length ? names.map(n => `
+    <div class="rpt-client-chip${rptOpsHighRemOpenClient===n.label?' open':''}" onclick="toggleOpsHighRemClient('${escJs(n.label)}')">
+      <span>${esc(n.label)}</span><span class="cnt">${n.count} عقد</span>
+    </div>`).join('') : '<div style="color:var(--ink-3);padding:8px;">لا توجد سجلات ✓</div>';
+  renderClientOpsDrill('rpt-ops-highrem-drill', rptOpsHighRemOpenClient);
 }
 
 window.renderReports = function() {
@@ -5582,6 +5653,7 @@ window.renderReports = function() {
 
   const opsHighRem = all.filter(c=>c.total>0&&c.rem/c.total>0.5&&c.rem>0);
   document.getElementById('rpt-ops-highrem-body').innerHTML = opsHighRem.length ? opsHighRem.map(c=>{const remPct=Math.round(c.rem/c.total*100);return`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td>${esc(c.axis)}</td><td class="amount">${fmtN(c.total)}</td><td class="amount" style="color:var(--amber);font-weight:500;">${fmtN(c.rem)}</td><td>${pctBar(remPct)}</td><td style="font-size:12px;">${c.end}</td></tr>`;}).join('') : `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ink-3);">لا توجد سجلات ✓</td></tr>`;
+  renderOpsHighRemClients(opsHighRem);
 
   /* ─── ALERTS ─── */
   const defaulted  = all.filter(c=>c.status==='متعثر'||c.status==='تعثر متوقع');
