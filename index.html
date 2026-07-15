@@ -1070,6 +1070,7 @@
   <button class="nav-btn" data-nav="operations" onclick="showPage('operations', this)">التشغيل</button>
   <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();">الدفعات</button>
   <button class="nav-btn" data-nav="alerts" onclick="showPage('alerts', this)">التنبيهات</button>
+  <button class="nav-btn" data-nav="tasks" onclick="showPage('tasks', this)">📋 المهام</button>
   <button class="nav-btn active" data-nav="reports" onclick="showPage('reports', this)">التقارير</button>
   <button class="nav-btn" data-nav="database" onclick="showPage('database', this)">قاعدة البيانات</button>
   <button class="nav-btn" data-nav="users" onclick="showPage('users', this)" style="color:var(--green-acc);display:none;">👥 المستخدمون</button>
@@ -1260,6 +1261,16 @@
 <div class="page" id="page-alerts">
   <div style="margin-top:24px;">
 
+    <!-- ═══ مهامي المعلّقة (المُسندة لي مباشرة أو لدوري) ═══ -->
+    <div id="my-pending-tasks-wrap" style="display:none;margin-bottom:24px;">
+      <div class="section-head" style="margin-top:0;">
+        <div class="section-title">📋 مهامي المعلّقة</div>
+      </div>
+      <div class="card">
+        <div id="my-pending-tasks-list" style="display:flex;flex-direction:column;gap:8px;padding:14px 18px;"></div>
+      </div>
+    </div>
+
     <!-- ═══ إشعارات الدفعات: تستحق خلال 5 أيام أو أقل / متأخرة ═══ -->
     <div class="section-head" style="margin-top:0;">
       <div class="section-title">🔔 إشعارات الدفعات (تستحق خلال 5 أيام أو متأخرة)</div>
@@ -1298,6 +1309,82 @@
       <div class="card">
         <div class="card-head" style="background:var(--amber-light);color:var(--amber);">⚠️ عقود تحتاج متابعة</div>
         <div id="alerts-followup-list" style="padding:20px;display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════
+     [إضافة جديدة] PAGE: TASKS — قائمة المهام
+═══════════════════════════════════════ -->
+<div class="page" id="page-tasks">
+  <div style="margin-top:24px;">
+
+    <div class="section-head" style="margin-top:0;">
+      <div class="section-title">📋 قائمة المهام</div>
+      <button class="btn-sm" id="task-add-btn" onclick="window.openTaskModal()" style="background:var(--gold);border-color:var(--gold);color:#FFFFFF;font-weight:500;display:none;">+ مهمة جديدة</button>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:20px;">
+      <button class="db-tab active" id="ttab-mine" onclick="showTasksTab('mine',this)">📥 المُسندة لي</button>
+      <button class="db-tab" id="ttab-created" onclick="showTasksTab('created',this)">📤 التي أنشأتها</button>
+    </div>
+
+    <div id="tpanel-mine">
+      <div class="card">
+        <div class="card-head">المهام المُسندة لي</div>
+        <div id="tasks-mine-list" style="display:flex;flex-direction:column;gap:8px;padding:14px 18px;"></div>
+      </div>
+    </div>
+
+    <div id="tpanel-created" style="display:none;">
+      <div class="card">
+        <div class="card-head">المهام التي أنشأتها</div>
+        <div id="tasks-created-list" style="display:flex;flex-direction:column;gap:8px;padding:14px 18px;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- نافذة إنشاء مهمة جديدة -->
+<div class="modal-overlay" id="task-modal-overlay" onclick="if(event.target===this)window.closeTaskModal()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">مهمة جديدة</div>
+      <button class="modal-close" onclick="window.closeTaskModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:10px;">
+        <label class="form-label">عنوان المهمة <span>*</span></label>
+        <input class="form-input" id="task-title" type="text" placeholder="مثال: متابعة عقد فندق كذا">
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label class="form-label">تفاصيل</label>
+        <textarea class="form-input" id="task-desc" rows="3" placeholder="اختياري" style="resize:vertical;"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label class="form-label">إسناد إلى <span>*</span></label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:6px;background:var(--sand);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;flex:1;">
+            <input type="radio" name="task-assignee-type" value="user" checked onchange="window.onTaskAssigneeTypeChange()"> مستخدم محدد
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;background:var(--sand);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;flex:1;">
+            <input type="radio" name="task-assignee-type" value="role" onchange="window.onTaskAssigneeTypeChange()"> دور كامل
+          </label>
+        </div>
+        <select class="form-select" id="task-assignee-user"></select>
+        <select class="form-select" id="task-assignee-role" style="display:none;"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label class="form-label">تاريخ الاستحقاق</label>
+        <input class="form-input" id="task-due" type="date">
+      </div>
+      <div id="task-error" style="font-size:12px;color:var(--red);min-height:14px;margin-bottom:4px;"></div>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button class="btn-sm btn-primary" id="task-save-btn" onclick="window.saveTask()" style="flex:1;padding:10px;font-size:13px;">✓ إسناد المهمة</button>
+        <button class="btn-sm" onclick="window.closeTaskModal()" style="padding:10px;">إلغاء</button>
       </div>
     </div>
   </div>
@@ -7061,6 +7148,7 @@ const PERM_PAGES = [
   { key:'reports',    label:'التقارير' },
   { key:'database',   label:'قاعدة البيانات' },
   { key:'auditlog',   label:'سجل التعديلات' },
+  { key:'tasks',      label:'المهام' },
 ];
 const PERM_ACTIONS = ['view','add','edit','delete','export'];
 
@@ -7222,6 +7310,7 @@ async function loadCurrentUserProfile(email, opts) {
   }
 
   currentUser = {
+    id: profile.id,
     name: profile.name || email,
     email,
     role: profile.role || 'user',
@@ -7744,12 +7833,14 @@ window.loadAllAppData = async function() {
   await loadClientBalances();
   await loadAuditLog();
   await loadManualPayments();
+  if (window.loadTasks) await window.loadTasks();
   if (window.renderAuditLog) renderAuditLog();
   if (window.filterContracts) filterContracts();
   if (window.renderReports) renderReports();
   if (window.renderOperations) renderOperations();
   if (window.renderAlerts) renderAlerts();
   if (window.renderCollectionPage) renderCollectionPage();
+  if (window.renderMyPendingTasks) window.renderMyPendingTasks();
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -9846,7 +9937,8 @@ window.showPage = function(id, btn) {
   _spOrigOps(id, btn);
   if (id === 'operations') renderOperations();
   if (id === 'users') renderUsers();
-  if (id === 'alerts') renderAlerts();
+  if (id === 'alerts') { renderAlerts(); if (window.renderMyPendingTasks) window.renderMyPendingTasks(); }
+  if (id === 'tasks' && window.renderTasksPage) window.renderTasksPage();
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -10826,6 +10918,251 @@ window.saveExtension = async function() {
   }
 };
 /* END EXTENSIONS */
+
+
+/* ══════════════════════════════════════════════
+   TASKS — قائمة المهام (إسناد مهمة لمستخدم محدد أو لدور كامل، تظهر كتنبيه للمُسند إليه)
+══════════════════════════════════════════════ */
+window.tasksLog = [];
+let taskAssignableUsers = []; // {id,name,role} — تُحمَّل عند فتح نافذة إنشاء مهمة عبر دالة آمنة (RPC)
+
+async function loadTasks() {
+  const { data, error } = await supabaseClient.from('tasks').select('*').order('id', { ascending: false });
+  if (error) return;
+  window.tasksLog.length = 0;
+  (data || []).forEach(r => window.tasksLog.push({
+    id: r.id, title: r.title, description: r.description || '',
+    assigneeType: r.assignee_type, assigneeUserId: r.assignee_user_id, assigneeRole: r.assignee_role || '',
+    dueDate: r.due_date, status: r.status,
+    createdBy: r.created_by || '', createdById: r.created_by_id,
+    completedBy: r.completed_by || '', completedAt: r.completed_at,
+    createdAt: r.created_at,
+  }));
+  // نجهّز أسماء المستخدمين مسبقاً حتى تظهر بشكل صحيح في القوائم قبل فتح نافذة "مهمة جديدة"
+  const { data: users, error: usersErr } = await supabaseClient.rpc('list_assignable_users');
+  if (!usersErr) taskAssignableUsers = users || [];
+}
+window.loadTasks = loadTasks;
+
+function isTaskForMe(t) {
+  if (t.assigneeType === 'user') return t.assigneeUserId === currentUser.id;
+  return t.assigneeType === 'role' && t.assigneeRole === currentUser.role;
+}
+function taskAssigneeLabel(t) {
+  if (t.assigneeType === 'role') return `دور: ${t.assigneeRole}`;
+  const u = taskAssignableUsers.find(x => x.id === t.assigneeUserId);
+  return u ? u.name : 'مستخدم';
+}
+
+window.openTaskModal = async function() {
+  if (!guard('tasks','add')) return;
+  document.getElementById('task-title').value = '';
+  document.getElementById('task-desc').value = '';
+  document.getElementById('task-due').value = '';
+  document.getElementById('task-error').textContent = '';
+  document.querySelector('input[name="task-assignee-type"][value="user"]').checked = true;
+
+  const { data, error } = await supabaseClient.rpc('list_assignable_users');
+  taskAssignableUsers = error ? [] : (data || []);
+  const userSel = document.getElementById('task-assignee-user');
+  userSel.innerHTML = taskAssignableUsers.map(u => `<option value="${u.id}">${esc(u.name)}${u.id===currentUser.id?' (أنا)':''}</option>`).join('');
+  const roles = [...new Set(taskAssignableUsers.map(u => u.role).filter(Boolean))];
+  const roleSel = document.getElementById('task-assignee-role');
+  roleSel.innerHTML = roles.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+
+  window.onTaskAssigneeTypeChange();
+  document.getElementById('task-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeTaskModal = function() {
+  const el = document.getElementById('task-modal-overlay');
+  if (el) el.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+window.onTaskAssigneeTypeChange = function() {
+  const checked = document.querySelector('input[name="task-assignee-type"]:checked');
+  const type = checked ? checked.value : 'user';
+  document.getElementById('task-assignee-user').style.display = type === 'user' ? '' : 'none';
+  document.getElementById('task-assignee-role').style.display = type === 'role' ? '' : 'none';
+};
+
+/* ── حفظ مهمة جديدة — حماية فعلية من الإرسال المكرر أثناء انتظار الشبكة ── */
+let taskSaveInProgress = false;
+window.saveTask = async function() {
+  if (taskSaveInProgress) return;
+  const title = document.getElementById('task-title').value.trim();
+  const desc  = document.getElementById('task-desc').value.trim();
+  const due   = document.getElementById('task-due').value || null;
+  const checkedType = document.querySelector('input[name="task-assignee-type"]:checked');
+  const type = checkedType ? checkedType.value : 'user';
+  const errEl = document.getElementById('task-error');
+  errEl.textContent = '';
+
+  if (!title) { errEl.textContent = '⚠ أدخل عنوان المهمة'; highlight('task-title'); return; }
+  let assigneeUserId = null, assigneeRole = null;
+  if (type === 'user') {
+    assigneeUserId = parseInt(document.getElementById('task-assignee-user').value) || null;
+    if (!assigneeUserId) { errEl.textContent = '⚠ اختر مستخدماً'; return; }
+  } else {
+    assigneeRole = document.getElementById('task-assignee-role').value;
+    if (!assigneeRole) { errEl.textContent = '⚠ اختر دوراً'; return; }
+  }
+
+  taskSaveInProgress = true;
+  const btn = document.getElementById('task-save-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; btn.textContent = 'جارٍ الحفظ...'; }
+
+  try {
+    const { data: row, error } = await supabaseClient.from('tasks').insert({
+      title, description: desc || null, assignee_type: type,
+      assignee_user_id: assigneeUserId, assignee_role: assigneeRole,
+      due_date: due, created_by: currentUser.name, created_by_id: currentUser.id,
+    }).select().single();
+    if (error) { errEl.textContent = 'تعذّر حفظ المهمة: ' + error.message; return; }
+
+    window.tasksLog.unshift({
+      id: row.id, title, description: desc, assigneeType: type,
+      assigneeUserId, assigneeRole: assigneeRole || '', dueDate: due, status: 'pending',
+      createdBy: currentUser.name, createdById: currentUser.id,
+      completedBy: '', completedAt: null, createdAt: row.created_at,
+    });
+
+    const assigneeLabel = type === 'role' ? `دور "${assigneeRole}"` : (taskAssignableUsers.find(u=>u.id===assigneeUserId)?.name || 'مستخدم');
+    addAuditEntry(currentUser.name||'النظام','مهمة جديدة','—','—', `أُسندت مهمة "${title}" إلى ${assigneeLabel}`, desc);
+
+    window.closeTaskModal();
+    if (window.renderTasksPage) window.renderTasksPage();
+    if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+    showToast('✓ تم إسناد المهمة');
+  } finally {
+    taskSaveInProgress = false;
+    const b = document.getElementById('task-save-btn');
+    if (b) { b.disabled = false; b.style.opacity = ''; b.style.cursor = ''; b.textContent = '✓ إسناد المهمة'; }
+  }
+};
+
+window.completeTask = async function(id) {
+  const t = window.tasksLog.find(x => x.id === id);
+  if (!t || t.status === 'done') return;
+  const now = new Date().toISOString();
+  const { error } = await supabaseClient.from('tasks').update({
+    status: 'done', completed_by: currentUser.name, completed_at: now,
+  }).eq('id', id);
+  if (error) { showToast('تعذّر تحديث المهمة: ' + error.message); return; }
+  t.status = 'done'; t.completedBy = currentUser.name; t.completedAt = now;
+  addAuditEntry(currentUser.name||'النظام','إنجاز مهمة','—','—', `أُنجزت مهمة "${t.title}"`, '');
+  if (window.renderTasksPage) window.renderTasksPage();
+  if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+  showToast('✓ تم إنجاز المهمة');
+};
+
+window.deleteTask = function(id) {
+  const t = window.tasksLog.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('confirm-msg').textContent = `هل تريد حذف المهمة "${t.title}"؟`;
+  pendingDeleteFn = async () => {
+    const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
+    if (error) { showToast('تعذّر حذف المهمة: ' + error.message); return; }
+    const idx = window.tasksLog.findIndex(x => x.id === id);
+    if (idx !== -1) window.tasksLog.splice(idx, 1);
+    addAuditEntry(currentUser.name||'النظام','حذف مهمة','—','—', `حُذفت مهمة "${t.title}"`, '');
+    if (window.renderTasksPage) window.renderTasksPage();
+    if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+    showToast('🗑 تم حذف المهمة');
+  };
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.showTasksTab = function(tab, btn) {
+  document.getElementById('tpanel-mine').style.display = tab === 'mine' ? '' : 'none';
+  document.getElementById('tpanel-created').style.display = tab === 'created' ? '' : 'none';
+  document.querySelectorAll('#page-tasks .db-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+};
+
+function taskRowHtml(t, opts) {
+  const dueTxt = t.dueDate ? new Date(t.dueDate+'T00:00:00').toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+  const isDone = t.status === 'done';
+  const canComplete = opts.showComplete && !isDone && isTaskForMe(t);
+  const canDelete = opts.showDelete && (t.createdById === currentUser.id || can('tasks','delete'));
+  return `
+    <div style="padding:11px 14px;background:var(--white);border:1px solid ${isDone?'var(--border)':'#E0CBA8'};border-radius:8px;${isDone?'opacity:.65;':''}">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="width:30px;height:30px;background:${isDone?'var(--sand)':'#F3EADF'};border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${isDone?'✅':'🕓'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--ink);">${esc(t.title)}</div>
+          ${t.description ? `<div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;">${esc(t.description)}</div>` : ''}
+          <div style="display:flex;gap:10px;margin-top:5px;flex-wrap:wrap;font-size:11px;color:var(--ink-3);">
+            <span>👤 ${esc(taskAssigneeLabel(t))}</span>
+            ${dueTxt ? `<span>📅 يستحق ${dueTxt}</span>` : ''}
+            <span>بواسطة ${esc(t.createdBy)}</span>
+            ${isDone ? `<span style="color:var(--green-dark);font-weight:600;">✓ أنجزها ${esc(t.completedBy)}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${canComplete ? `<button class="btn-sm" onclick="window.completeTask(${t.id})" style="background:var(--green-acc);border-color:var(--green-acc);color:#fff;font-size:11px;padding:5px 10px;">✓ إنجاز</button>` : ''}
+          ${canDelete ? `<button class="del-btn" onclick="window.deleteTask(${t.id})" style="font-size:11px;padding:5px 10px;">حذف</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+window.renderTasksPage = function() {
+  const addBtn = document.getElementById('task-add-btn');
+  if (addBtn) addBtn.style.display = can('tasks','add') ? '' : 'none';
+
+  const mine = window.tasksLog.filter(isTaskForMe).sort((a,b) => (a.status==='done')-(b.status==='done') || b.id-a.id);
+  const mineBox = document.getElementById('tasks-mine-list');
+  if (mineBox) {
+    mineBox.innerHTML = mine.length
+      ? mine.map(t => taskRowHtml(t, { showComplete:true, showDelete:true })).join('')
+      : '<div style="text-align:center;padding:20px;color:var(--ink-3);font-size:12px;">لا توجد مهام مُسندة لك حالياً</div>';
+  }
+
+  const created = window.tasksLog.filter(t => t.createdById === currentUser.id).sort((a,b) => b.id-a.id);
+  const createdBox = document.getElementById('tasks-created-list');
+  if (createdBox) {
+    createdBox.innerHTML = created.length
+      ? created.map(t => taskRowHtml(t, { showComplete:false, showDelete:true })).join('')
+      : '<div style="text-align:center;padding:20px;color:var(--ink-3);font-size:12px;">لم تُنشئ أي مهمة بعد</div>';
+  }
+};
+
+window.renderMyPendingTasks = function() {
+  const wrap = document.getElementById('my-pending-tasks-wrap');
+  const box = document.getElementById('my-pending-tasks-list');
+  const pending = window.tasksLog.filter(t => t.status === 'pending' && isTaskForMe(t)).sort((a,b) => b.id-a.id);
+
+  if (wrap && box) {
+    if (pending.length) {
+      wrap.style.display = '';
+      box.innerHTML = pending.map(t => taskRowHtml(t, { showComplete:true, showDelete:false })).join('');
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  // شارة العدّاد على زر المهام في شريط التنقل
+  const tasksBtn = document.querySelector('[data-nav="tasks"]');
+  if (tasksBtn) {
+    let badge = tasksBtn.querySelector('#tasks-nav-badge');
+    if (pending.length) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.id = 'tasks-nav-badge';
+        badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-right:6px;background:var(--red);color:#fff;border-radius:9px;font-size:10.5px;font-weight:700;vertical-align:middle;';
+        tasksBtn.appendChild(badge);
+      }
+      badge.textContent = pending.length;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+};
+/* END TASKS */
 
 
 /* ═══════════════════════════════════════════════════════════════
