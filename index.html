@@ -2164,6 +2164,10 @@
         🚌 إضافة حافلة (باصات إضافية)
       </button>
 
+      <button class="btn-sm det-edit-only" onclick="window.openExtendModal()" style="width:100%;padding:11px;margin-top:10px;background:#F3EADF;border-color:#E0CBA8;color:#6B5636;font-weight:500;font-size:13px;">
+        🕓 تمديد العقد
+      </button>
+
       <!-- ═══ قسم الخصومات ═══ -->
       <div style="margin-top:20px;border-top:2px solid var(--border);padding-top:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -2909,6 +2913,8 @@
 <script>
 /* تعريف الحافلات الإضافية في نطاق عالٍ */
 window.flowsLog = []; // {fid,contractId,start,end,startISO,endISO,dueISO,days,buses,shift,amount,note,paid,enteredBy,entered}
+/* تعريف تمديدات العقود في نطاق عالٍ */
+window.extensionsLog = []; // {xid,contractId,oldEnd,newEnd,oldEndISO,newEndISO,daysAdded,type,amount,note,enteredBy,entered}
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -2964,15 +2970,16 @@ async function syncContractFinancials(c) {
   }).eq('id', c.id);
 }
 
-// يحمّل الدفعات/الخصومات/الحافلات الإضافية/خصوماتها/الفواتير/جدولة الأقساط من Supabase
+// يحمّل الدفعات/الخصومات/الحافلات الإضافية/خصوماتها/الفواتير/جدولة الأقساط/تمديدات العقود من Supabase
 async function loadFinancials() {
-  const [payRes, discRes, flowRes, flowDiscRes, invRes, schedRes] = await Promise.all([
+  const [payRes, discRes, flowRes, flowDiscRes, invRes, schedRes, extRes] = await Promise.all([
     supabaseClient.from('payments').select('*').order('id'),
     supabaseClient.from('discounts').select('*').order('id'),
     supabaseClient.from('flows').select('*').order('id'),
     supabaseClient.from('flow_discounts').select('*').order('id'),
     supabaseClient.from('invoices').select('*').order('id'),
     supabaseClient.from('payment_schedules').select('*').order('id'),
+    supabaseClient.from('extensions').select('*').order('id'),
   ]);
 
   paymentsLog.length = 0;
@@ -3012,6 +3019,14 @@ async function loadFinancials() {
     id:r.id, contractId:r.contract_id, fromStr:isoToDMY(r.from_date), toStr:isoToDMY(r.to_date),
     daysInPeriod:r.days_in_period, dailyRate:Number(r.daily_rate)||0, amount:Number(r.amount)||0,
     savedAt: fmtArDate(r.saved_at),
+  }));
+
+  window.extensionsLog.length = 0;
+  (extRes.data||[]).forEach(r => window.extensionsLog.push({
+    xid:r.id, contractId:r.contract_id, oldEnd:isoToDMY(r.old_end_date), newEnd:isoToDMY(r.new_end_date),
+    oldEndISO:r.old_end_date, newEndISO:r.new_end_date, daysAdded:r.days_added||0,
+    type:r.extension_type||'free', amount:Number(r.amount)||0, note:r.note||'',
+    enteredBy:r.entered_by||'', entered: fmtArDate(r.created_at),
   }));
 
   Object.keys(paySchedules).forEach(k => delete paySchedules[k]);
@@ -10588,6 +10603,229 @@ window.syncFlowsToPayments = function() {
   if (typeof renderPayments === 'function') renderPayments();
 };
 /* END FLOWS */
+
+
+/* ══════════════════════════════════════════════
+   EXTENSIONS — تمديد العقد (يعمل بغض النظر عن وجود تسعير)
+   يمدّد تاريخ نهاية العقد نفسه، ويكون التمديد مجانياً أو مدفوعاً بمبلغ يدوي
+══════════════════════════════════════════════ */
+
+function addDaysISO(iso, n) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/* ── نافذة تمديد العقد HTML تُضاف ديناميكياً ── */
+(function injectExtendModal() {
+  const tpl = `
+<div class="modal-overlay" id="extend-modal-overlay" onclick="if(event.target===this)window.closeExtendModal()">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">تمديد العقد</div>
+        <div id="extend-modal-meta" style="font-size:12px;color:var(--ink-3);margin-top:3px;">—</div>
+      </div>
+      <button class="modal-close" onclick="window.closeExtendModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- سجل التمديدات السابقة -->
+      <div id="extend-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+
+      <!-- نموذج تمديد جديد -->
+      <div style="background:#F3EADF;border:1px solid #E0CBA8;border-radius:10px;padding:14px;">
+        <div style="font-size:12px;font-weight:600;color:#6B5636;margin-bottom:12px;">🕓 تمديد جديد</div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">تاريخ النهاية الحالي</label>
+          <input class="form-input" id="ext-old-end" type="text" disabled style="background:var(--sand);color:var(--ink-3);">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">تاريخ النهاية الجديد <span>*</span></label>
+          <input class="form-input" id="ext-new-end" type="date" style="background:var(--white);" oninput="window.onExtendCalc()">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">نوع التمديد <span>*</span></label>
+          <div style="display:flex;gap:8px;">
+            <label style="display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;flex:1;">
+              <input type="radio" name="ext-type" value="free" checked onchange="window.onExtendTypeChange()"> مجاني
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:8px 14px;cursor:pointer;flex:1;">
+              <input type="radio" name="ext-type" value="paid" onchange="window.onExtendTypeChange()"> مدفوع
+            </label>
+          </div>
+        </div>
+        <div class="form-group" id="ext-amount-wrap" style="display:none;margin-bottom:10px;">
+          <label class="form-label">المبلغ (ريال) <span>*</span></label>
+          <input class="form-input" id="ext-amount" type="number" min="0" step="any" placeholder="أدخل المبلغ" style="background:var(--white);">
+        </div>
+        <div id="ext-calc-box" style="display:none;padding:8px 10px;background:var(--gold-light);border:1px solid #E8D28A;border-radius:6px;margin-bottom:10px;font-size:12px;color:var(--ink-2);"></div>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label class="form-label">ملاحظة</label>
+          <input class="form-input" id="ext-note" type="text" placeholder="اختياري" style="background:var(--white);">
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button class="btn-sm btn-primary" id="ext-save-btn" onclick="window.saveExtension()" style="flex:1;padding:10px;font-size:13px;">✓ حفظ التمديد</button>
+          <button class="btn-sm" onclick="window.closeExtendModal()" style="padding:10px;">إلغاء</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>`;
+  document.body.insertAdjacentHTML('beforeend', tpl);
+})();
+
+window.closeExtendModal = function() {
+  const el = document.getElementById('extend-modal-overlay');
+  if (el) el.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+window.openExtendModal = function() {
+  if (!guard('contracts','edit')) return;
+  const c = contracts.find(x => x.id === activeContractId);
+  if (!c) return;
+  document.getElementById('extend-modal-meta').textContent = `عقد #${c.displayId || c.id} · ${c.hotel}`;
+  document.getElementById('ext-old-end').value = c.end || '—';
+  const oldEndISO = dmyToISO(c.end);
+  document.getElementById('ext-new-end').value = '';
+  document.getElementById('ext-new-end').min = oldEndISO ? addDaysISO(oldEndISO, 1) : '';
+  document.querySelector('input[name="ext-type"][value="free"]').checked = true;
+  document.getElementById('ext-amount-wrap').style.display = 'none';
+  document.getElementById('ext-amount').value = '';
+  document.getElementById('ext-note').value = '';
+  document.getElementById('ext-calc-box').style.display = 'none';
+  renderExtensionList(activeContractId);
+  document.getElementById('extend-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.onExtendTypeChange = function() {
+  const checked = document.querySelector('input[name="ext-type"]:checked');
+  const type = checked ? checked.value : 'free';
+  document.getElementById('ext-amount-wrap').style.display = type === 'paid' ? 'block' : 'none';
+};
+
+window.onExtendCalc = function() {
+  const c = contracts.find(x => x.id === activeContractId);
+  const box = document.getElementById('ext-calc-box');
+  if (!c || !box) return;
+  const newEndVal = document.getElementById('ext-new-end').value;
+  const oldEndISO = dmyToISO(c.end);
+  if (!newEndVal || !oldEndISO) { box.style.display = 'none'; return; }
+  const daysAdded = Math.round((new Date(newEndVal) - new Date(oldEndISO)) / 86400000);
+  if (daysAdded <= 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.textContent = `سيُضاف ${daysAdded} يوم لمدة العقد (من ${c.end} إلى ${newEndVal.split('-').reverse().join('/')})`;
+};
+
+function renderExtensionList(contractId) {
+  const el = document.getElementById('extend-list');
+  if (!el) return;
+  const list = extensionsLog.filter(x => x.contractId === contractId).slice().sort((a,b) => b.xid - a.xid);
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--ink-3);font-size:12px;">لا توجد تمديدات مسجّلة</div>';
+    return;
+  }
+  el.innerHTML = list.map(x => `
+    <div style="padding:11px 12px;background:var(--white);border:1px solid var(--border);border-radius:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;background:#F3EADF;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🕓</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;color:#6B5636;">${esc(x.oldEnd)} ← ${esc(x.newEnd)} (+${x.daysAdded} يوم)</span>
+            <span style="font-size:11px;font-weight:600;color:${x.type==='paid'?'var(--green-dark)':'var(--ink-3)'};">${x.type==='paid' ? x.amount.toLocaleString()+' ريال' : 'مجاني'}</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:3px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--ink-3);">📅 ${esc(x.entered)} · ${esc(x.enteredBy)}</span>
+            ${x.note ? `<span style="font-size:11px;color:var(--ink-3);">📝 ${esc(x.note)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── حفظ تمديد جديد — حماية فعلية من الإرسال المكرر أثناء انتظار الشبكة (بدل تأخير ثابت) ── */
+let extensionSaveInProgress = false;
+window.saveExtension = async function() {
+  if (extensionSaveInProgress) return;
+  const c = contracts.find(x => x.id === activeContractId);
+  if (!c) return;
+  const newEndVal = document.getElementById('ext-new-end').value;
+  const checkedType = document.querySelector('input[name="ext-type"]:checked');
+  const type = checkedType ? checkedType.value : 'free';
+  const amount = type === 'paid' ? (parseFloat(document.getElementById('ext-amount').value) || 0) : 0;
+  const note = document.getElementById('ext-note').value.trim();
+  const oldEndISO = dmyToISO(c.end);
+
+  if (!newEndVal) { highlight('ext-new-end'); showToast('⚠ أدخل تاريخ النهاية الجديد'); return; }
+  if (!oldEndISO || new Date(newEndVal) <= new Date(oldEndISO)) { highlight('ext-new-end'); showToast('⚠ يجب أن يكون تاريخ التمديد بعد تاريخ النهاية الحالي'); return; }
+  if (type === 'paid' && amount <= 0) { highlight('ext-amount'); showToast('⚠ أدخل مبلغ التمديد'); return; }
+
+  extensionSaveInProgress = true;
+  const saveBtn = document.getElementById('ext-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; saveBtn.style.cursor = 'not-allowed'; saveBtn.textContent = 'جارٍ الحفظ...'; }
+
+  try {
+    const daysAdded = Math.round((new Date(newEndVal) - new Date(oldEndISO)) / 86400000);
+    const startISO  = dmyToISO(c.start);
+    const newDays   = startISO ? Math.max(0, Math.round((new Date(newEndVal) - new Date(startISO)) / 86400000) + 2) : (c.days || 0) + daysAdded;
+    const fmt = d => d.split('-').reverse().join('/');
+    const now = new Date().toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const enteredBy = currentUser.name || 'النظام';
+    const oldEndDisplay = c.end;
+
+    const { data: extRow, error: extErr } = await supabaseClient.from('extensions').insert({
+      contract_id: activeContractId, old_end_date: oldEndISO, new_end_date: newEndVal,
+      days_added: daysAdded, extension_type: type, amount, note, entered_by: enteredBy,
+    }).select().single();
+    if (extErr) { showToast('تعذّر حفظ التمديد: ' + extErr.message); return; }
+
+    extensionsLog.push({
+      xid: extRow.id, contractId: activeContractId,
+      oldEnd: oldEndDisplay, newEnd: fmt(newEndVal), oldEndISO, newEndISO: newEndVal,
+      daysAdded, type, amount, note, enteredBy, entered: now,
+    });
+
+    c.end = fmt(newEndVal);
+    c.days = newDays;
+    if (type === 'paid') { c.total += amount; c.rem += amount; }
+    c.status = computeContractStatus(c);
+
+    await supabaseClient.from('contracts').update({
+      end_date: newEndVal, days: newDays, total: c.total, original_total: c.originalTotal, remaining: c.rem, status: c.status,
+    }).eq('id', c.id);
+
+    const typeLabel = type === 'paid' ? `مدفوع (${amount.toLocaleString()} ريال)` : 'مجاني';
+    addAuditEntry(currentUser.name||'النظام','تمديد عقد',c.id,c.hotel,
+      `تمديد من ${oldEndDisplay} إلى ${c.end} (+${daysAdded} يوم) — ${typeLabel}${note?' · '+note:''}`, '');
+
+    renderExtensionList(activeContractId);
+    filterContracts();
+    if (window.renderOperations) renderOperations();
+    if (window.renderReports) renderReports();
+    if (window.renderActivePayments) renderActivePayments();
+    if (window.renderSettlement) renderSettlement();
+    if (window.renderClientBalances) renderClientBalances();
+    openContractDetail(activeContractId);
+    showToast(`✓ تم تمديد العقد إلى ${c.end} (${typeLabel})`);
+
+    document.getElementById('ext-old-end').value = c.end;
+    document.getElementById('ext-new-end').value = '';
+    document.getElementById('ext-new-end').min = addDaysISO(newEndVal, 1);
+    document.getElementById('ext-amount').value = '';
+    document.getElementById('ext-note').value = '';
+    document.getElementById('ext-calc-box').style.display = 'none';
+    document.querySelector('input[name="ext-type"][value="free"]').checked = true;
+    document.getElementById('ext-amount-wrap').style.display = 'none';
+  } finally {
+    extensionSaveInProgress = false;
+    const btn = document.getElementById('ext-save-btn');
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; btn.textContent = '✓ حفظ التمديد'; }
+  }
+};
+/* END EXTENSIONS */
 
 
 /* ═══════════════════════════════════════════════════════════════
