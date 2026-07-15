@@ -870,13 +870,14 @@
   .rpt-ctxt .rem   { font-size:11px; font-weight:600; margin-top:4px; }
 
   /* قوائم أسماء العملاء التفاعلية (تفاصيل العقود التشغيلية / متبقي أكثر من 50%) */
-  .rpt-client-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .rpt-client-chips { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap:10px; }
   .rpt-client-chip {
-    display:flex; align-items:center; gap:7px; background:var(--sand); border:1px solid var(--border);
-    border-radius:20px; padding:8px 14px; font-size:12.5px; font-weight:600; color:var(--ink);
-    cursor:pointer; transition: background .15s, border-color .15s;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    background:var(--sand); border:1px solid var(--border);
+    border-radius:12px; padding:14px 10px; font-size:12.5px; font-weight:600; color:var(--ink);
+    cursor:pointer; transition: background .15s, border-color .15s, transform .15s; text-align:center;
   }
-  .rpt-client-chip:hover { border-color:var(--gold); }
+  .rpt-client-chip:hover { border-color:var(--gold); transform:translateY(-2px); }
   .rpt-client-chip.open { background:var(--gold); border-color:var(--gold); color:#fff; }
   .rpt-client-chip .cnt { font-size:11px; font-weight:500; color:var(--ink-3); }
   .rpt-client-chip.open .cnt { color:rgba(255,255,255,.85); }
