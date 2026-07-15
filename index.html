@@ -470,6 +470,8 @@
     padding: 20px;
   }
   .modal-overlay.open { display: flex; }
+  /* نافذة تأكيد الحذف يجب أن تظهر دائماً فوق أي نافذة أخرى مفتوحة (تفاصيل العقد / إضافة حافلة ...) */
+  #confirm-overlay { z-index: 600; }
   .modal {
     background: var(--white);
     border-radius: 16px;
@@ -10084,7 +10086,7 @@ window.saveDistribution = async function() {
           <input class="form-input" id="fl-note" type="text" placeholder="اختياري" style="background:var(--white);">
         </div>
         <div style="display:flex;gap:10px;margin-top:4px;">
-          <button class="btn-sm btn-primary" onclick="window.saveFlow()" style="flex:1;padding:10px;font-size:13px;">✓ حفظ الحافلة</button>
+          <button class="btn-sm btn-primary" id="fl-save-btn" onclick="window.saveFlow()" style="flex:1;padding:10px;font-size:13px;">✓ حفظ الحافلة</button>
           <button class="btn-sm" onclick="window.closeFlowModal()" style="padding:10px;">إلغاء</button>
         </div>
       </div>
@@ -10378,7 +10380,9 @@ window.closeFlowModal = function() {
 };
 
 /* ── حفظ حافلة إضافية ── */
+let flowSaveInProgress = false; // يمنع الإرسال المكرر أثناء انتظار الشبكة (بدل تأخير ثابت) — يبقى الرد فورياً للضغطة الأولى
 window.saveFlow = async function() {
+  if (flowSaveInProgress) return; // طلب سابق ما زال قيد التنفيذ — تجاهل أي ضغط إضافي حتى ينتهي
   const c = contracts.find(x => x.id === activeContractId);
   if (!c) return;
   const start = document.getElementById('fl-start').value;
@@ -10400,55 +10404,65 @@ window.saveFlow = async function() {
   if (!buses || buses <= 0) { highlight('fl-buses'); showToast('⚠ أدخل عدد الباصات'); return; }
   if (amount <= 0)       { highlight('fl-amount'); showToast('⚠ أدخل المبلغ'); return; }
 
-  const fmt = d => d.split('-').reverse().join('/');
-  const now  = new Date().toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const enteredBy = currentUser.name || 'النظام';
+  flowSaveInProgress = true;
+  const saveBtn = document.getElementById('fl-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; saveBtn.style.cursor = 'not-allowed'; saveBtn.textContent = 'جارٍ الحفظ...'; }
 
-  const { data: flowRow, error: flowErr } = await supabaseClient.from('flows').insert({
-    contract_id: activeContractId, start_date: start, end_date: end, due_date: end,
-    days, buses, shift, price, rental_rate: rental, op_cost: opCost, rn_cost: rnCost, amount, paid: 0,
-    note, entered_by: enteredBy,
-  }).select().single();
-  if (flowErr) { showToast('تعذّر حفظ الحافلة الإضافية: ' + flowErr.message); return; }
+  try {
+    const fmt = d => d.split('-').reverse().join('/');
+    const now  = new Date().toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const enteredBy = currentUser.name || 'النظام';
 
-  flowsLog.push({
-    fid: flowRow.id,
-    contractId: activeContractId,
-    start: fmt(start), end: fmt(end),
-    startISO: start, endISO: end, dueISO: end,
-    days, buses, shift, amount, note,
-    opCost, rnCost,
-    paid: 0,
-    enteredBy,
-    entered:   now,
-  });
+    const { data: flowRow, error: flowErr } = await supabaseClient.from('flows').insert({
+      contract_id: activeContractId, start_date: start, end_date: end, due_date: end,
+      days, buses, shift, price, rental_rate: rental, op_cost: opCost, rn_cost: rnCost, amount, paid: 0,
+      note, entered_by: enteredBy,
+    }).select().single();
+    if (flowErr) { showToast('تعذّر حفظ الحافلة الإضافية: ' + flowErr.message); return; }
 
-  // تحديث القيمة الحالية والمتبقي (الأصلي يبقى ثابت)
-  c.total += amount;
-  c.rem   += amount;
-  c.status = computeContractStatus(c);
-  await syncContractFinancials(c);
+    flowsLog.push({
+      fid: flowRow.id,
+      contractId: activeContractId,
+      start: fmt(start), end: fmt(end),
+      startISO: start, endISO: end, dueISO: end,
+      days, buses, shift, amount, note,
+      opCost, rnCost,
+      paid: 0,
+      enteredBy,
+      entered:   now,
+    });
 
-  const breakDown = `تشغيل: ${opCost.toLocaleString()} + محطة: ${rnCost.toLocaleString()}`;
-  addAuditEntry(currentUser.name||'النظام','إضافة حافلة',c.id,c.hotel,
-    `${buses} باص · ${days} يوم = ${amount.toLocaleString()} ريال (${breakDown}) (${fmt(start)} — ${fmt(end)}) · الإجمالي الجديد: ${c.total.toLocaleString()} ريال${note?' · '+note:''}`, '');
+    // تحديث القيمة الحالية والمتبقي (الأصلي يبقى ثابت)
+    c.total += amount;
+    c.rem   += amount;
+    c.status = computeContractStatus(c);
+    await syncContractFinancials(c);
 
-  renderFlowList(activeContractId);
-  syncFlowsToPayments();
-  filterContracts();
-  if (window.renderOperations) renderOperations();
-  if (window.renderActivePayments) renderActivePayments();
-  if (window.renderSettlement) renderSettlement();
-  if (window.renderClientBalances) renderClientBalances();
-  if (window.renderPaymentsLogAll) renderPaymentsLogAll();
-  openContractDetail(activeContractId);
-  showToast(`✓ تم تسجيل إضافة ${buses} حافلة (${amount.toLocaleString()} ريال) · الإجمالي: ${c.total.toLocaleString()}`);
+    const breakDown = `تشغيل: ${opCost.toLocaleString()} + محطة: ${rnCost.toLocaleString()}`;
+    addAuditEntry(currentUser.name||'النظام','إضافة حافلة',c.id,c.hotel,
+      `${buses} باص · ${days} يوم = ${amount.toLocaleString()} ريال (${breakDown}) (${fmt(start)} — ${fmt(end)}) · الإجمالي الجديد: ${c.total.toLocaleString()} ريال${note?' · '+note:''}`, '');
 
-  // تصفير النموذج للإضافة التالية
-  document.getElementById('fl-buses').value  = '';
-  document.getElementById('fl-amount').value = '';
-  document.getElementById('fl-note').value   = '';
-  document.getElementById('fl-calc-box').style.display = 'none';
+    renderFlowList(activeContractId);
+    syncFlowsToPayments();
+    filterContracts();
+    if (window.renderOperations) renderOperations();
+    if (window.renderActivePayments) renderActivePayments();
+    if (window.renderSettlement) renderSettlement();
+    if (window.renderClientBalances) renderClientBalances();
+    if (window.renderPaymentsLogAll) renderPaymentsLogAll();
+    openContractDetail(activeContractId);
+    showToast(`✓ تم تسجيل إضافة ${buses} حافلة (${amount.toLocaleString()} ريال) · الإجمالي: ${c.total.toLocaleString()}`);
+
+    // تصفير النموذج للإضافة التالية
+    document.getElementById('fl-buses').value  = '';
+    document.getElementById('fl-amount').value = '';
+    document.getElementById('fl-note').value   = '';
+    document.getElementById('fl-calc-box').style.display = 'none';
+  } finally {
+    flowSaveInProgress = false;
+    const btn = document.getElementById('fl-save-btn');
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; btn.textContent = '✓ حفظ الحافلة'; }
+  }
 };
 
 /* ── حذف حافلة إضافية ── */
@@ -10685,7 +10699,7 @@ function debounceClick(fn, delayMs) {
   };
 }
 [
-  'saveContract','savePayment','saveDiscount','saveFlow','saveFlowDiscount','saveInvoice',
+  'saveContract','savePayment','saveDiscount','saveFlowDiscount','saveInvoice',
   'savePaymentRecord','confirmInstalmentPaid','confirmEditInstalment','saveDistribution',
   'saveDbItem','saveNewHotelInline','doRegister',
 ].forEach(name => {
