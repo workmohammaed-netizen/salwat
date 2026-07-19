@@ -9422,7 +9422,7 @@ window.renderPaymentsLogAll = function() {
     return (b.pid || 0) - (a.pid || 0);
   });
   box.innerHTML = `
-  <div class="table-wrap">
+  <div class="table-wrap" style="max-height:480px;overflow-y:auto;">
     <table>
       <thead><tr><th>التاريخ</th><th>العميل</th><th>العقد</th><th>المبلغ</th><th>الطريقة</th><th>ملاحظة</th><th></th></tr></thead>
       <tbody>${list.map(p => {
