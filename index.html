@@ -1820,20 +1820,6 @@
         </details>
       </div>
 
-      <!-- عقود المتبقي فيها أكثر من 50% -->
-      <div class="section-head"><div class="section-title">عقود المتبقي فيها أكثر من 50%</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-ops-highrem-body','عقود المتبقي فيها أكثر من 50%','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-ops-highrem-body','عقود المتبقي فيها أكثر من 50%','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;padding:16px;">
-        <div class="rpt-client-chips" id="rpt-ops-highrem-chips"></div>
-        <div id="rpt-ops-highrem-drill"></div>
-        <details class="rpt-rawtable" style="margin-top:14px;"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الإجمالي</th><th>المتبقي</th><th>نسبة المتبقي</th><th>تاريخ النهاية</th></tr></thead>
-              <tbody id="rpt-ops-highrem-body"></tbody>
-            </table>
-          </div>
-        </details>
-      </div>
     </div>
 
     <!-- ── TAB: ALERTS DETAIL ── -->
@@ -5268,7 +5254,7 @@ window.exportReport = function(type) {
   else exportToPDF(title, columns, rows);
 };
 
-function fmtN(n) { return (n||0).toLocaleString('ar-SA'); }
+function fmtN(n) { return (n||0).toLocaleString('en-US'); }
 // تعقيم أي نص قبل إدراجه في innerHTML — يمنع XSS من الحقول النصية الحرة (أسماء، ملاحظات، إلخ)
 function esc(s) {
   if (s == null) return '';
@@ -5309,7 +5295,6 @@ let rptAxisMap = {};
 let rptFinDrillMetric = null; // المقياس المفتوح حالياً في لوحة التفصيل المالية حسب العميل
 let rptOpsDrillMetric = null; // المقياس المفتوح حالياً في لوحة التفصيل التشغيلية حسب العميل
 let rptOpsContractsOpenClient = null; // العميل المفتوح حالياً في قائمة "تفاصيل العقود التشغيلية"
-let rptOpsHighRemOpenClient   = null; // العميل المفتوح حالياً في قائمة "عقود المتبقي فيها أكثر من 50%"
 
 /* يعرض عقود عميل معيّن (سارية/منتهية) أسفل اسمه — يُستخدم من قوائم أسماء العملاء بالتقرير التشغيلي */
 function renderClientOpsDrill(containerId, clientName) {
@@ -5344,10 +5329,6 @@ window.toggleOpsContractsClient = function(name) {
   rptOpsContractsOpenClient = (rptOpsContractsOpenClient === name) ? null : name;
   renderOpsContractCards(contracts);
 };
-window.toggleOpsHighRemClient = function(name) {
-  rptOpsHighRemOpenClient = (rptOpsHighRemOpenClient === name) ? null : name;
-  renderOpsHighRemClients(contracts.filter(c => c.total > 0 && c.rem / c.total > 0.5 && c.rem > 0));
-};
 
 /* تجميع أي قائمة عقود حسب اسم العميل مع مجموع قيمة مخصصة وعدد العقود */
 function groupByClient(list, valueFn) {
@@ -5366,6 +5347,18 @@ function groupByHotel(list, valueFn) {
   const map = {};
   list.forEach(c => {
     const key = c.hotel || 'غير محدد';
+    if (!map[key]) map[key] = { value:0, count:0 };
+    map[key].value += valueFn(c);
+    map[key].count += 1;
+  });
+  return Object.entries(map).map(([label,v]) => ({ label, value:v.value, count:v.count })).sort((a,b)=>b.value-a.value);
+}
+
+/* تجميع أي قائمة عقود حسب المحور — يُستخدم لمعرفة أكثر محور شغّال (إيرادات) */
+function groupByAxis(list, valueFn) {
+  const map = {};
+  list.forEach(c => {
+    const key = c.axis || 'غير محدد';
     if (!map[key]) map[key] = { value:0, count:0 };
     map[key].value += valueFn(c);
     map[key].count += 1;
@@ -5441,8 +5434,9 @@ window.showFinDrill = function(metric) {
     title = 'المتبقي حسب العميل';
     rows = groupByClient(list.filter(c=>c.rem>0), c=>c.rem).map(r=>({...r, display: fmtN(r.value)+' ريال', sub: r.count+' عقد'}));
   } else if (metric === 'count') {
-    title = 'عدد العقود ذات القيمة المالية حسب العميل';
-    rows = groupByClient(list, ()=>1).map(r=>({...r, value:r.count, display: r.count+' عقد', sub:''}));
+    title = 'عقود بدون قيمة مالية حسب العميل';
+    const noValueList = contracts.filter(c => !c.total || c.total === 0);
+    rows = groupByClient(noValueList, ()=>1).map(r=>({...r, value:r.count, display: r.count+' عقد', sub:''}));
   } else if (metric === 'overdue') {
     title = 'المبالغ غير المسددة (حتى اليوم) حسب العميل';
     const today = new Date(); today.setHours(0,0,0,0);
@@ -5504,7 +5498,7 @@ function animateRaceBars(root) {
   }));
 }
 
-function renderFinBento(totalContracted, totalPaid, totalRem, pctCollect, activeCount, overdueAmount) {
+function renderFinBento(totalContracted, totalPaid, totalRem, pctCollect, noValueCount, overdueAmount) {
   const box = document.getElementById('rpt-fin-bento');
   if (!box) return;
   const alertLevel = pctCollect >= 70 ? '' : pctCollect >= 40 ? 'warn' : 'alert';
@@ -5514,11 +5508,11 @@ function renderFinBento(totalContracted, totalPaid, totalRem, pctCollect, active
       <div class="rpt-ring" data-ring-target="${pctCollect}"><div class="rpt-ring-val">${pctCollect}%</div></div>
       <div class="rpt-ring-lbl">نسبة التحصيل الكلية</div>
     </div>
-    <div class="rpt-tile gold" data-metric="total" onclick="showFinDrill('total')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي قيمة العقود</div><div class="val">${fmtN(totalContracted)}</div><div class="sub">ريال سعودي</div></div>
-    <div class="rpt-tile" data-metric="paid" onclick="showFinDrill('paid')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي المسدد</div><div class="val">${fmtN(totalPaid)}</div><div class="sub">حتى الآن</div></div>
-    <div class="rpt-tile ${overdueLevel}" data-metric="overdue" onclick="showFinDrill('overdue')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">المبالغ غير المسددة</div><div class="val">${fmtN(overdueAmount)}</div><div class="sub">حتى اليوم</div></div>
-    <div class="rpt-tile ${alertLevel}" data-metric="rem" onclick="showFinDrill('rem')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">المتبقي</div><div class="val">${fmtN(totalRem)}</div><div class="sub">قيد التحصيل</div></div>
-    <div class="rpt-tile" data-metric="count" onclick="showFinDrill('count')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">عقود ذات قيمة مالية</div><div class="val">${activeCount}</div><div class="sub">من إجمالي العقود</div></div>`;
+    <div class="rpt-tile gold" data-metric="total" onclick="showFinDrill('total')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي قيمة العقود</div><div class="val">${fmtN(totalContracted)}</div></div>
+    <div class="rpt-tile" data-metric="paid" onclick="showFinDrill('paid')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي المسدد</div><div class="val">${fmtN(totalPaid)}</div></div>
+    <div class="rpt-tile ${overdueLevel}" data-metric="overdue" onclick="showFinDrill('overdue')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">المبالغ غير المسددة</div><div class="val">${fmtN(overdueAmount)}</div></div>
+    <div class="rpt-tile ${alertLevel}" data-metric="rem" onclick="showFinDrill('rem')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">المتبقي</div><div class="val">${fmtN(totalRem)}</div></div>
+    <div class="rpt-tile" data-metric="count" onclick="showFinDrill('count')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">عقود بدون قيمة مالية</div><div class="val">${noValueCount}</div></div>`;
   animateRings(box);
   // إعادة ضبط لوحة التفصيل عند كل تحديث للبيانات لتفادي عرض أرقام قديمة
   rptFinDrillMetric = null;
@@ -5534,7 +5528,26 @@ window.showRevSeg = function(i) {
   const center = document.getElementById('rpt-map-donut-center');
   if (center) center.innerHTML = `<div class="amt">${p}%</div><div class="lbl" title="${esc(r.label)}">${esc(r.label)}</div>`;
   const detail = document.getElementById('rpt-map-detail');
-  if (detail) detail.innerHTML = `<strong style="color:var(--green-dark);">${esc(r.label)}</strong> — ${fmtN(r.amount)} ريال (${p}% من الإجمالي)<br><span style="color:var(--ink-3);">${esc(r.note||'')}</span>`;
+  if (!detail) return;
+
+  const breakdown = (typeof r.breakdown === 'function') ? r.breakdown().filter(x=>x.value>0) : [];
+  const top = breakdown.slice(0, 8);
+  const maxVal = Math.max(1, ...top.map(x=>x.value));
+  const breakdownHtml = top.length ? `
+    <div style="margin-top:12px;display:flex;flex-direction:column;gap:7px;">
+      ${top.map((x,idx) => {
+        const pct = Math.max(4, Math.round(x.value/maxVal*100));
+        return `<div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:130px;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;">${idx===0?'👑 ':''}${esc(x.label)}</div>
+          <div style="flex:1;height:18px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--gold),#E8D28A);border-radius:5px;"></div>
+          </div>
+          <div style="font-size:11px;color:var(--ink-3);flex-shrink:0;width:85px;text-align:left;">${fmtN(x.value)} ر</div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  detail.innerHTML = `<strong style="color:var(--green-dark);">${esc(r.label)}</strong> — ${fmtN(r.amount)} ريال (${p}% من الإجمالي)<br><span style="color:var(--ink-3);">${esc(r.note||'')}</span>${breakdownHtml}`;
 };
 
 function renderRevenueMap(rows, total) {
@@ -5674,16 +5687,13 @@ function renderOpsBento(totalBuses, totalDays, activeCount, totalCount, activeHo
       <div class="rpt-ring-lbl">عقد نشط من ${totalCount}</div>
     </div>
     <div class="rpt-tile gold" data-metric="buses" onclick="showOpsDrill('buses')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي الحافلات</div><div class="val">${totalBuses}</div></div>
-    <div class="rpt-tile" data-metric="days" onclick="showOpsDrill('days')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">أيام التشغيل الكلية</div><div class="val">${fmtN(totalDays)}</div><div class="sub">يوم تشغيل مُنجز</div></div>
-    <div class="rpt-tile" data-metric="hotels" onclick="showOpsDrill('hotels')" title="اضغط لعرض الفنادق النشطة تشغيلياً"><div class="lbl">فنادق نشطة</div><div class="val">${activeHotelsCount}</div><div class="sub">فندق نشط حالياً</div></div>
+    <div class="rpt-tile" data-metric="days" onclick="showOpsDrill('days')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">أيام التشغيل الكلية</div><div class="val">${fmtN(totalDays)}</div></div>
+    <div class="rpt-tile" data-metric="hotels" onclick="showOpsDrill('hotels')" title="اضغط لعرض الفنادق النشطة تشغيلياً"><div class="lbl">فنادق نشطة</div><div class="val">${activeHotelsCount}</div></div>
     <div class="rpt-tile" data-metric="active" onclick="showOpsDrill('active')" title="اضغط لعرض العملاء أصحاب العقود النشطة" style="display:flex;align-items:center;gap:12px;">
       <div class="rpt-cring" style="--ring-color:var(--gold);" data-ring-target="${pctActive}"><b>${activeCount}</b></div>
-      <div>
-        <div class="lbl" style="margin-bottom:4px;">عقود نشطة</div>
-        <div class="sub">${pctActive}% من الإجمالي</div>
-      </div>
+      <div class="lbl">عقود نشطة</div>
     </div>
-    <div class="rpt-tile" data-metric="total" onclick="showOpsDrill('total')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي العقود</div><div class="val">${totalCount}</div><div class="sub">في قاعدة البيانات</div></div>`;
+    <div class="rpt-tile" data-metric="total" onclick="showOpsDrill('total')" title="اضغط لعرض التفصيل حسب العميل"><div class="lbl">إجمالي العقود</div><div class="val">${totalCount}</div></div>`;
   animateRings(box);
   // إعادة ضبط لوحة التفصيل عند كل تحديث للبيانات لتفادي عرض أرقام قديمة
   rptOpsDrillMetric = null;
@@ -5752,17 +5762,6 @@ function renderOpsContractCards(all) {
   renderClientOpsDrill('rpt-ops-contracts-drill', rptOpsContractsOpenClient);
 }
 
-function renderOpsHighRemClients(list) {
-  const box = document.getElementById('rpt-ops-highrem-chips');
-  if (!box) return;
-  const names = groupByClient(list, ()=>0).sort((a,b)=>a.label.localeCompare(b.label,'ar'));
-  box.innerHTML = names.length ? names.map(n => `
-    <div class="rpt-client-chip${rptOpsHighRemOpenClient===n.label?' open':''}" onclick="toggleOpsHighRemClient('${escJs(n.label)}')">
-      <span>${esc(n.label)}</span><span class="cnt">${n.count} عقد</span>
-    </div>`).join('') : '<div style="color:var(--ink-3);padding:8px;">لا توجد سجلات ✓</div>';
-  renderClientOpsDrill('rpt-ops-highrem-drill', rptOpsHighRemOpenClient);
-}
-
 window.renderReports = function() {
   if (typeof renderTodayCard === 'function') renderTodayCard();
   const active = contracts.filter(c => c.total > 0);
@@ -5776,16 +5775,20 @@ window.renderReports = function() {
 
   rptActiveContracts = active;
   const overdueAmount = computeOverdueToDate(active);
-  renderFinBento(totalContracted, totalPaid, totalRem, pct, active.length, overdueAmount);
+  const noValueCount = all.filter(c => !c.total || c.total === 0).length;
+  renderFinBento(totalContracted, totalPaid, totalRem, pct, noValueCount, overdueAmount);
   renderContractPulse();
 
   const opRevenue = active.reduce((s,c) => s + (c.price||0) * (c.buses||0) * (c.days||0), 0);
   const rawahelStationFees = active.filter(c => c.carrier === 'رواحل').reduce((s,c) => s + (c.rental||0) * (c.buses||0) * (c.days||0), 0);
   const otherStationFees = active.filter(c => c.carrier && c.carrier !== 'رواحل' && c.carrier !== '—').reduce((s,c) => s + (c.rental||0) * (c.buses||0) * (c.days||0), 0);
   const revRows = [
-    {label:'إجمالي إيجار الحافلات',      amount:opRevenue,        note:'الإيراد التشغيلي الأساسي'},
-    {label:'رسوم المحاور — رواحل',        amount:rawahelStationFees, note:'رسوم المحاور الخاصة بشركة رواحل'},
-    {label:'رسوم المحاور — شركات أخرى',   amount:otherStationFees,  note:'رسوم المحاور لباقي الشركات'},
+    {label:'إجمالي إيجار الحافلات',      amount:opRevenue,        note:'الإيراد التشغيلي الأساسي',
+     breakdown: () => groupByClient(active, c => (c.price||0)*(c.buses||0)*(c.days||0))},
+    {label:'رسوم المحاور — رواحل',        amount:rawahelStationFees, note:'رسوم المحاور الخاصة بشركة رواحل',
+     breakdown: () => groupByAxis(active.filter(c=>c.carrier==='رواحل'), c => (c.rental||0)*(c.buses||0)*(c.days||0))},
+    {label:'رسوم المحاور — شركات أخرى',   amount:otherStationFees,  note:'رسوم المحاور لباقي الشركات',
+     breakdown: () => groupByAxis(active.filter(c=>c.carrier && c.carrier!=='رواحل' && c.carrier!=='—'), c => (c.rental||0)*(c.buses||0)*(c.days||0))},
   ];
   const revTotal = revRows.reduce((s,r)=>s+r.amount,0);
   document.getElementById('rpt-revenue-body').innerHTML = revRows.map(r=>{
@@ -5846,10 +5849,6 @@ window.renderReports = function() {
 
   document.getElementById('rpt-ops-contracts-body').innerHTML = all.map(c=>`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td style="font-size:12px;">${esc(c.axis)}</td><td style="font-size:12px;">عادي</td><td style="font-size:12px;">${esc(c.carrier)}</td><td style="text-align:center;font-weight:600;">${c.buses||'—'}</td><td style="font-size:12px;">${c.start}</td><td style="font-size:12px;">${c.end}</td><td style="text-align:center;">${c.days}</td><td class="amount">${c.price?fmtN(c.price):'—'}</td></tr>`).join('');
   renderOpsContractCards(all);
-
-  const opsHighRem = all.filter(c=>c.total>0&&c.rem/c.total>0.5&&c.rem>0);
-  document.getElementById('rpt-ops-highrem-body').innerHTML = opsHighRem.length ? opsHighRem.map(c=>{const remPct=Math.round(c.rem/c.total*100);return`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td>${esc(c.axis)}</td><td class="amount">${fmtN(c.total)}</td><td class="amount" style="color:var(--amber);font-weight:500;">${fmtN(c.rem)}</td><td>${pctBar(remPct)}</td><td style="font-size:12px;">${c.end}</td></tr>`;}).join('') : `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ink-3);">لا توجد سجلات ✓</td></tr>`;
-  renderOpsHighRemClients(opsHighRem);
 
   /* ─── ALERTS ─── */
   const defaulted  = all.filter(c=>c.status==='متعثر'||c.status==='تعثر متوقع');
