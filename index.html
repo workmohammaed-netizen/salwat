@@ -9070,12 +9070,15 @@ window.renderSettlement = function() {
     (byClient[name] = byClient[name] || []).push(c);
   });
 
-  let clientNames = Object.keys(byClient);
-  if (settleClientFilter) {
-    clientNames = clientNames.filter(n => n.includes(settleClientFilter));
+  // ما نعرض القائمة كاملة افتراضياً — لازم تبحث باسم العميل الأول
+  if (!settleClientFilter) {
+    box.innerHTML = `<div class="pay-empty">🔍 اكتب اسم العميل بالأعلى للبحث عن عقوده المستحقة</div>`;
+    return;
   }
+
+  let clientNames = Object.keys(byClient).filter(n => n.includes(settleClientFilter));
   if (!clientNames.length) {
-    box.innerHTML = `<div class="pay-empty">لا توجد عقود مستحقة السداد حالياً ✓</div>`;
+    box.innerHTML = `<div class="pay-empty">لا توجد عقود مستحقة السداد مطابقة للبحث</div>`;
     return;
   }
 
@@ -9346,16 +9349,19 @@ window.exportClientStatement = function(name, type) {
 window.renderClientBalances = function() {
   const box = document.getElementById('client-balances-list');
   if (!box) return;
-  let names = allClientNames();
-  if (!names.length) {
+  const allNames = allClientNames();
+  if (!allNames.length) {
     box.innerHTML = `<div class="pay-empty">لا يوجد عملاء بعد</div>`;
     return;
   }
-  if (balanceClientFilter) {
-    names = names.filter(n => n.includes(balanceClientFilter));
+  // ما نعرض القائمة كاملة افتراضياً — لازم تبحث باسم العميل الأول
+  if (!balanceClientFilter) {
+    box.innerHTML = `<div class="pay-empty">🔍 اكتب اسم العميل بالأعلى للبحث عن رصيده</div>`;
+    return;
   }
+  let names = allNames.filter(n => n.includes(balanceClientFilter));
   if (!names.length) {
-    box.innerHTML = `<div class="pay-empty">لا يوجد عميل مطابق للفلتر</div>`;
+    box.innerHTML = `<div class="pay-empty">لا يوجد عميل مطابق للبحث</div>`;
     return;
   }
   box.innerHTML = names.map(name => {
