@@ -1390,6 +1390,20 @@
   </div>
 </div>
 
+<!-- نافذة محادثة المهمة (التذكرة) -->
+<div class="modal-overlay" id="task-thread-overlay" onclick="if(event.target===this)window.closeTaskThread()">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="thread-title">—</div>
+        <div id="thread-meta" style="font-size:12px;color:var(--ink-3);margin-top:3px;">—</div>
+      </div>
+      <button class="modal-close" onclick="window.closeTaskThread()">✕</button>
+    </div>
+    <div class="modal-body" id="thread-body"></div>
+  </div>
+</div>
+
 
 <!-- ═══════════════════════════════════════
      PAGE 5: DATABASE
@@ -10921,26 +10935,41 @@ window.saveExtension = async function() {
 
 
 /* ══════════════════════════════════════════════
-   TASKS — قائمة المهام (إسناد مهمة لمستخدم محدد أو لدور كامل، تظهر كتنبيه للمُسند إليه)
+   TASKS — نظام تذاكر (تيكت): المدير يرسل مهمة، الموظف يرد بنص (إنجاز/تعطل بسبب)،
+   والمدير يقدر يرسل رداً آخر لو فيه تعطل — وإغلاق المهمة نهائياً حصراً لمن أنشأها
 ══════════════════════════════════════════════ */
 window.tasksLog = [];
-let taskAssignableUsers = []; // {id,name,role} — تُحمَّل عند فتح نافذة إنشاء مهمة عبر دالة آمنة (RPC)
+window.taskMessagesLog = {}; // { [taskId]: [{id,taskId,senderId,senderName,body,kind,createdAt}, ...] مرتبة تصاعدياً }
+let taskAssignableUsers = []; // {id,name,role} — تُحمَّل مسبقاً وعند فتح نافذة إنشاء مهمة عبر دالة آمنة (RPC)
+let activeThreadTaskId = null; // المهمة المفتوحة حالياً في نافذة المحادثة
 
 async function loadTasks() {
-  const { data, error } = await supabaseClient.from('tasks').select('*').order('id', { ascending: false });
-  if (error) return;
-  window.tasksLog.length = 0;
-  (data || []).forEach(r => window.tasksLog.push({
-    id: r.id, title: r.title, description: r.description || '',
-    assigneeType: r.assignee_type, assigneeUserId: r.assignee_user_id, assigneeRole: r.assignee_role || '',
-    dueDate: r.due_date, status: r.status,
-    createdBy: r.created_by || '', createdById: r.created_by_id,
-    completedBy: r.completed_by || '', completedAt: r.completed_at,
-    createdAt: r.created_at,
-  }));
-  // نجهّز أسماء المستخدمين مسبقاً حتى تظهر بشكل صحيح في القوائم قبل فتح نافذة "مهمة جديدة"
-  const { data: users, error: usersErr } = await supabaseClient.rpc('list_assignable_users');
-  if (!usersErr) taskAssignableUsers = users || [];
+  const [taskRes, msgRes, usersRes] = await Promise.all([
+    supabaseClient.from('tasks').select('*').order('id', { ascending: false }),
+    supabaseClient.from('task_messages').select('*').order('id'),
+    supabaseClient.rpc('list_assignable_users'),
+  ]);
+  if (!taskRes.error) {
+    window.tasksLog.length = 0;
+    (taskRes.data || []).forEach(r => window.tasksLog.push({
+      id: r.id, title: r.title, description: r.description || '',
+      assigneeType: r.assignee_type, assigneeUserId: r.assignee_user_id, assigneeRole: r.assignee_role || '',
+      dueDate: r.due_date, status: r.status,
+      createdBy: r.created_by || '', createdById: r.created_by_id,
+      completedBy: r.completed_by || '', completedAt: r.completed_at,
+      createdAt: r.created_at,
+    }));
+  }
+  if (!msgRes.error) {
+    window.taskMessagesLog = {};
+    (msgRes.data || []).forEach(r => {
+      (window.taskMessagesLog[r.task_id] = window.taskMessagesLog[r.task_id] || []).push({
+        id: r.id, taskId: r.task_id, senderId: r.sender_id, senderName: r.sender_name || '',
+        body: r.body, kind: r.reply_kind || 'update', createdAt: r.created_at,
+      });
+    });
+  }
+  if (!usersRes.error) taskAssignableUsers = usersRes.data || [];
 }
 window.loadTasks = loadTasks;
 
@@ -10952,6 +10981,19 @@ function taskAssigneeLabel(t) {
   if (t.assigneeType === 'role') return `دور: ${t.assigneeRole}`;
   const u = taskAssignableUsers.find(x => x.id === t.assigneeUserId);
   return u ? u.name : 'مستخدم';
+}
+// دور من في الرد الآن: ما فيه رسائل بعد => دور المُسند إليه يبدأ. آخر رسالة من المدير => دور المُسند إليه.
+// آخر رسالة من المُسند إليه => دور المدير (صاحب المهمة) يراجع ويرد أو يغلقها.
+function myTurnOnTask(t) {
+  if (t.status === 'done') return false;
+  const iAmAssignee = isTaskForMe(t);
+  const iAmCreator  = t.createdById === currentUser.id;
+  if (!iAmAssignee && !iAmCreator) return false;
+  const msgs = window.taskMessagesLog[t.id] || [];
+  const last = msgs[msgs.length - 1];
+  if (!last) return iAmAssignee;
+  const lastFromCreator = last.senderId === t.createdById;
+  return lastFromCreator ? iAmAssignee : iAmCreator;
 }
 
 window.openTaskModal = async function() {
@@ -11043,21 +11085,6 @@ window.saveTask = async function() {
   }
 };
 
-window.completeTask = async function(id) {
-  const t = window.tasksLog.find(x => x.id === id);
-  if (!t || t.status === 'done') return;
-  const now = new Date().toISOString();
-  const { error } = await supabaseClient.from('tasks').update({
-    status: 'done', completed_by: currentUser.name, completed_at: now,
-  }).eq('id', id);
-  if (error) { showToast('تعذّر تحديث المهمة: ' + error.message); return; }
-  t.status = 'done'; t.completedBy = currentUser.name; t.completedAt = now;
-  addAuditEntry(currentUser.name||'النظام','إنجاز مهمة','—','—', `أُنجزت مهمة "${t.title}"`, '');
-  if (window.renderTasksPage) window.renderTasksPage();
-  if (window.renderMyPendingTasks) window.renderMyPendingTasks();
-  showToast('✓ تم إنجاز المهمة');
-};
-
 window.deleteTask = function(id) {
   const t = window.tasksLog.find(x => x.id === id);
   if (!t) return;
@@ -11083,15 +11110,22 @@ window.showTasksTab = function(tab, btn) {
   if (btn) btn.classList.add('active');
 };
 
+function taskStatusLabel(t) {
+  if (t.status === 'done') return { txt:'✅ منجزة', color:'var(--green-dark)' };
+  if (myTurnOnTask(t)) return { txt:'🔴 دورك للرد', color:'var(--red)' };
+  return { txt:'⏳ بانتظار الطرف الآخر', color:'var(--ink-3)' };
+}
+
 function taskRowHtml(t, opts) {
   const dueTxt = t.dueDate ? new Date(t.dueDate+'T00:00:00').toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
   const isDone = t.status === 'done';
-  const canComplete = opts.showComplete && !isDone && isTaskForMe(t);
   const canDelete = opts.showDelete && (t.createdById === currentUser.id || can('tasks','delete'));
+  const msgCount = (window.taskMessagesLog[t.id] || []).length;
+  const st = taskStatusLabel(t);
   return `
-    <div style="padding:11px 14px;background:var(--white);border:1px solid ${isDone?'var(--border)':'#E0CBA8'};border-radius:8px;${isDone?'opacity:.65;':''}">
+    <div style="padding:11px 14px;background:var(--white);border:1px solid ${isDone?'var(--border)':'#E0CBA8'};border-radius:8px;${isDone?'opacity:.65;':''}cursor:pointer;" onclick="window.openTaskThread(${t.id})">
       <div style="display:flex;align-items:flex-start;gap:10px;">
-        <div style="width:30px;height:30px;background:${isDone?'var(--sand)':'#F3EADF'};border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${isDone?'✅':'🕓'}</div>
+        <div style="width:30px;height:30px;background:${isDone?'var(--sand)':'#F3EADF'};border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${isDone?'✅':'🎫'}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:600;color:var(--ink);">${esc(t.title)}</div>
           ${t.description ? `<div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;">${esc(t.description)}</div>` : ''}
@@ -11099,11 +11133,12 @@ function taskRowHtml(t, opts) {
             <span>👤 ${esc(taskAssigneeLabel(t))}</span>
             ${dueTxt ? `<span>📅 يستحق ${dueTxt}</span>` : ''}
             <span>بواسطة ${esc(t.createdBy)}</span>
-            ${isDone ? `<span style="color:var(--green-dark);font-weight:600;">✓ أنجزها ${esc(t.completedBy)}</span>` : ''}
+            <span>💬 ${msgCount} رد</span>
+            <span style="color:${st.color};font-weight:600;">${st.txt}</span>
           </div>
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
-          ${canComplete ? `<button class="btn-sm" onclick="window.completeTask(${t.id})" style="background:var(--green-acc);border-color:var(--green-acc);color:#fff;font-size:11px;padding:5px 10px;">✓ إنجاز</button>` : ''}
+        <div style="display:flex;gap:6px;flex-shrink:0;" onclick="event.stopPropagation();">
+          <button class="btn-sm" onclick="window.openTaskThread(${t.id})" style="font-size:11px;padding:5px 10px;">💬 المحادثة</button>
           ${canDelete ? `<button class="del-btn" onclick="window.deleteTask(${t.id})" style="font-size:11px;padding:5px 10px;">حذف</button>` : ''}
         </div>
       </div>
@@ -11114,19 +11149,19 @@ window.renderTasksPage = function() {
   const addBtn = document.getElementById('task-add-btn');
   if (addBtn) addBtn.style.display = can('tasks','add') ? '' : 'none';
 
-  const mine = window.tasksLog.filter(isTaskForMe).sort((a,b) => (a.status==='done')-(b.status==='done') || b.id-a.id);
+  const mine = window.tasksLog.filter(isTaskForMe).sort((a,b) => myTurnOnTask(b)-myTurnOnTask(a) || (a.status==='done')-(b.status==='done') || b.id-a.id);
   const mineBox = document.getElementById('tasks-mine-list');
   if (mineBox) {
     mineBox.innerHTML = mine.length
-      ? mine.map(t => taskRowHtml(t, { showComplete:true, showDelete:true })).join('')
+      ? mine.map(t => taskRowHtml(t, { showDelete:true })).join('')
       : '<div style="text-align:center;padding:20px;color:var(--ink-3);font-size:12px;">لا توجد مهام مُسندة لك حالياً</div>';
   }
 
-  const created = window.tasksLog.filter(t => t.createdById === currentUser.id).sort((a,b) => b.id-a.id);
+  const created = window.tasksLog.filter(t => t.createdById === currentUser.id).sort((a,b) => myTurnOnTask(b)-myTurnOnTask(a) || b.id-a.id);
   const createdBox = document.getElementById('tasks-created-list');
   if (createdBox) {
     createdBox.innerHTML = created.length
-      ? created.map(t => taskRowHtml(t, { showComplete:false, showDelete:true })).join('')
+      ? created.map(t => taskRowHtml(t, { showDelete:true })).join('')
       : '<div style="text-align:center;padding:20px;color:var(--ink-3);font-size:12px;">لم تُنشئ أي مهمة بعد</div>';
   }
 };
@@ -11134,12 +11169,12 @@ window.renderTasksPage = function() {
 window.renderMyPendingTasks = function() {
   const wrap = document.getElementById('my-pending-tasks-wrap');
   const box = document.getElementById('my-pending-tasks-list');
-  const pending = window.tasksLog.filter(t => t.status === 'pending' && isTaskForMe(t)).sort((a,b) => b.id-a.id);
+  const pending = window.tasksLog.filter(t => myTurnOnTask(t)).sort((a,b) => b.id-a.id);
 
   if (wrap && box) {
     if (pending.length) {
       wrap.style.display = '';
-      box.innerHTML = pending.map(t => taskRowHtml(t, { showComplete:true, showDelete:false })).join('');
+      box.innerHTML = pending.map(t => taskRowHtml(t, { showDelete:false })).join('');
     } else {
       wrap.style.display = 'none';
     }
@@ -11161,6 +11196,125 @@ window.renderMyPendingTasks = function() {
       badge.remove();
     }
   }
+};
+
+/* ── نافذة المحادثة (التذكرة) — عرض الردود + صندوق الرد المناسب لدور المستخدم الحالي ── */
+window.openTaskThread = function(id) {
+  const t = window.tasksLog.find(x => x.id === id);
+  if (!t) return;
+  activeThreadTaskId = id;
+  document.getElementById('thread-title').textContent = t.title;
+  document.getElementById('thread-meta').textContent = `عقد بواسطة ${t.createdBy} · مُسندة إلى ${taskAssigneeLabel(t)}`;
+  renderTaskThreadBody();
+  document.getElementById('task-thread-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeTaskThread = function() {
+  activeThreadTaskId = null;
+  const el = document.getElementById('task-thread-overlay');
+  if (el) el.classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+const taskReplyKindLabel = { update:'تحديث', done_report:'✓ إنجاز', blocked_report:'⚠ تعطل' };
+const taskReplyKindColor = { update:'var(--ink-2)', done_report:'var(--green-dark)', blocked_report:'var(--red)' };
+
+function renderTaskThreadBody() {
+  const t = window.tasksLog.find(x => x.id === activeThreadTaskId);
+  const body = document.getElementById('thread-body');
+  if (!t || !body) return;
+
+  const msgs = window.taskMessagesLog[t.id] || [];
+  const isDone = t.status === 'done';
+  const iAmCreator = t.createdById === currentUser.id;
+  const iAmAssignee = isTaskForMe(t);
+
+  const msgsHtml = msgs.length ? msgs.map(m => {
+    const mine = m.senderId === currentUser.id;
+    return `
+    <div style="display:flex;flex-direction:column;align-items:${mine?'flex-end':'flex-start'};margin-bottom:10px;">
+      <div style="max-width:80%;background:${mine?'var(--gold-light)':'var(--sand)'};border-radius:10px;padding:9px 12px;">
+        <div style="font-size:11px;font-weight:600;color:${taskReplyKindColor[m.kind]||'var(--ink-2)'};margin-bottom:3px;">${esc(m.senderName)} · ${taskReplyKindLabel[m.kind]||'تحديث'}</div>
+        <div style="font-size:12.5px;color:var(--ink);white-space:pre-wrap;">${esc(m.body)}</div>
+      </div>
+      <div style="font-size:10px;color:var(--ink-3);margin-top:2px;">${fmtArDate(m.createdAt)}</div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;color:var(--ink-3);font-size:12px;padding:16px;">لا توجد ردود بعد</div>';
+
+  let replyHtml = '';
+  if (isDone) {
+    replyHtml = `<div style="text-align:center;padding:12px;background:var(--sand);border-radius:8px;font-size:12px;color:var(--green-dark);font-weight:600;">✅ تم إنهاء هذه المهمة بواسطة ${esc(t.completedBy||t.createdBy)}</div>`;
+  } else if (iAmAssignee) {
+    replyHtml = `
+      <textarea class="form-input" id="thread-reply-text" rows="2" placeholder="اكتب ردك..." style="resize:vertical;margin-bottom:8px;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" onclick="window.sendTaskReply('done_report')" style="flex:1;background:var(--green-acc);border-color:var(--green-acc);color:#fff;">✓ إبلاغ بالإنجاز</button>
+        <button class="btn-sm" onclick="window.sendTaskReply('blocked_report')" style="flex:1;background:var(--red);border-color:var(--red);color:#fff;">⚠ إبلاغ بتعطل</button>
+      </div>`;
+  } else if (iAmCreator) {
+    replyHtml = `
+      <textarea class="form-input" id="thread-reply-text" rows="2" placeholder="اكتب ملاحظة أو متابعة..." style="resize:vertical;margin-bottom:8px;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" onclick="window.sendTaskReply('update')" style="flex:1;">✉ إرسال رد</button>
+        <button class="btn-sm" id="thread-close-btn" onclick="window.closeTaskAsDone()" style="flex:1;background:var(--green-dark);border-color:var(--green-dark);color:#fff;">✅ إنهاء المهمة</button>
+      </div>`;
+  } else {
+    replyHtml = '<div style="text-align:center;padding:10px;color:var(--ink-3);font-size:12px;">هذه المهمة ليست مُسندة إليك</div>';
+  }
+
+  body.innerHTML = `<div style="max-height:320px;overflow-y:auto;margin-bottom:14px;padding-left:4px;" id="thread-msgs">${msgsHtml}</div>${replyHtml}`;
+  const msgsBox = document.getElementById('thread-msgs');
+  if (msgsBox) msgsBox.scrollTop = msgsBox.scrollHeight;
+}
+
+let taskReplySending = false;
+window.sendTaskReply = async function(kind) {
+  if (taskReplySending) return;
+  const t = window.tasksLog.find(x => x.id === activeThreadTaskId);
+  if (!t) return;
+  const textEl = document.getElementById('thread-reply-text');
+  const body = textEl ? textEl.value.trim() : '';
+  if (!body) { showToast('⚠ اكتب نص الرد'); return; }
+
+  taskReplySending = true;
+  try {
+    const { data: row, error } = await supabaseClient.from('task_messages').insert({
+      task_id: t.id, sender_id: currentUser.id, sender_name: currentUser.name, body, reply_kind: kind,
+    }).select().single();
+    if (error) { showToast('تعذّر إرسال الرد: ' + error.message); return; }
+
+    (window.taskMessagesLog[t.id] = window.taskMessagesLog[t.id] || []).push({
+      id: row.id, taskId: t.id, senderId: currentUser.id, senderName: currentUser.name,
+      body, kind, createdAt: row.created_at,
+    });
+    addAuditEntry(currentUser.name||'النظام', taskReplyKindLabel[kind]||'رد على مهمة', '—','—', `رد على مهمة "${t.title}": ${body}`, '');
+
+    renderTaskThreadBody();
+    if (window.renderTasksPage) window.renderTasksPage();
+    if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+    showToast('✓ تم إرسال الرد');
+  } finally {
+    taskReplySending = false;
+  }
+};
+
+// إنهاء المهمة نهائياً — صلاحية حصرية لمن أنشأها (المدير)، وليس المُسند إليه
+window.closeTaskAsDone = async function() {
+  const t = window.tasksLog.find(x => x.id === activeThreadTaskId);
+  if (!t) return;
+  if (t.createdById !== currentUser.id && !can('tasks','edit')) { showToast('🔒 إنهاء المهمة صلاحية حصرية لمن أنشأها'); return; }
+  const now = new Date().toISOString();
+  const { error } = await supabaseClient.from('tasks').update({
+    status: 'done', completed_by: currentUser.name, completed_at: now,
+  }).eq('id', t.id);
+  if (error) { showToast('تعذّر إنهاء المهمة: ' + error.message); return; }
+  t.status = 'done'; t.completedBy = currentUser.name; t.completedAt = now;
+  addAuditEntry(currentUser.name||'النظام','إنهاء مهمة','—','—', `أنهى "${currentUser.name}" مهمة "${t.title}"`, '');
+  renderTaskThreadBody();
+  if (window.renderTasksPage) window.renderTasksPage();
+  if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+  showToast('✅ تم إنهاء المهمة');
 };
 /* END TASKS */
 
