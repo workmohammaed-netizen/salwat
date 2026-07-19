@@ -1354,19 +1354,28 @@
       </div>
     </div>
 
-    <!-- ═══ [إضافة جديدة] عقود تبدأ/تنتهي اليوم وغداً ═══ -->
+    <!-- ═══ [إضافة جديدة] عقود تبدأ/تنتهي اليوم وغداً — مقفلة افتراضياً، تضغط على العنوان لتفتحها ═══ -->
     <div class="three-col" style="margin-bottom:24px;">
       <div class="card">
-        <div class="card-head" style="background:#E6F1FB;color:#0C447C;">🔵 عقود تبدأ اليوم</div>
-        <div id="alerts-start-today-list" style="padding:20px;display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="card-head" style="background:#E6F1FB;color:#0C447C;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-start-today-list', this)">
+          <span>🔵 عقود تبدأ اليوم <span id="alerts-start-today-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+        </div>
+        <div id="alerts-start-today-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
       <div class="card">
-        <div class="card-head" style="background:var(--red-light);color:var(--red);">⏹ عقود تنتهي اليوم</div>
-        <div id="alerts-end-today-list" style="padding:20px;display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="card-head" style="background:var(--red-light);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-end-today-list', this)">
+          <span>⏹ عقود تنتهي اليوم <span id="alerts-end-today-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+        </div>
+        <div id="alerts-end-today-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
       <div class="card">
-        <div class="card-head" style="background:var(--amber-light);color:var(--amber);">🟡 عقود تبدأ غداً</div>
-        <div id="alerts-start-tomorrow-list" style="padding:20px;display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="card-head" style="background:var(--amber-light);color:var(--amber);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-start-tomorrow-list', this)">
+          <span>🟡 عقود تبدأ غداً <span id="alerts-start-tomorrow-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+        </div>
+        <div id="alerts-start-tomorrow-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
     </div>
 
@@ -3247,7 +3256,21 @@ function renderAlertMiniList(elId, list, opts) {
       <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${esc(c.axis)||'—'} · ${c.buses||0} حافلة</div>
       <div style="font-size:11px;color:${opts.dateColor};margin-top:4px;font-weight:500;">${opts.dateLabel}: ${opts.dateField(c)}</div>
     </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--ink-3);font-size:12px;">${opts.emptyText}</div>`;
+  const countEl = document.getElementById(elId.replace('-list', '-count'));
+  if (countEl) countEl.textContent = list.length ? `(${list.length})` : '';
 }
+
+// فتح/إغلاق بطاقات "تبدأ اليوم/تنتهي اليوم/تبدأ غداً" — مقفلة افتراضياً وتفتح بسكرول داخلي
+window.toggleAlertMiniList = function(id, headEl) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const willOpen = el.style.display !== 'flex';
+  el.style.display = willOpen ? 'flex' : 'none';
+  if (headEl) {
+    const arrow = headEl.querySelector('.alert-mini-arrow');
+    if (arrow) arrow.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+};
 
 window.renderAlerts = function() {
   refreshAllStatuses();
