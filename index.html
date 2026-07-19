@@ -117,20 +117,37 @@
     border-bottom-color: var(--gold);
   }
 
-  /* ── NAV كقائمة جانبية على شاشات الكمبيوتر (بدل شريط أفقي أعلى الصفحة) ── */
+  /* زر طي/فتح القائمة الجانبية — يظهر فقط على شاشات الكمبيوتر (داخل الميديا كويري بالأسفل) */
+  #sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 78px; right: 190px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green-dark); color: #fff; border: 2px solid var(--white);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    font-size: 11px; cursor: pointer; z-index: 95;
+    align-items: center; justify-content: center;
+    transition: right .25s ease;
+  }
+
+  /* ── NAV كقائمة جانبية داكنة قابلة للطي على شاشات الكمبيوتر (بدل شريط أفقي أعلى الصفحة) ── */
   @media (min-width: 901px) {
     nav {
       position: fixed;
       top: 64px; right: 0; bottom: 0;
       width: 190px;
+      background: var(--green-dark);
       flex-direction: column;
       align-items: stretch;
       gap: 3px;
       padding: 18px 10px;
       border-bottom: none;
-      border-left: 1px solid var(--border);
+      border-left: none;
       overflow-y: auto;
+      overflow-x: hidden;
+      white-space: nowrap;
       z-index: 90;
+      transition: width .25s ease, padding .25s ease;
     }
     .nav-btn {
       padding: 11px 14px;
@@ -140,13 +157,22 @@
       border-radius: 8px;
       top: 0;
       width: 100%;
+      color: rgba(255,255,255,.62);
     }
-    .nav-btn:hover { background: var(--sand); }
+    .nav-btn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
     .nav-btn.active {
-      background: var(--sand);
+      background: rgba(184,144,100,.18);
+      color: var(--gold);
       border-bottom-color: transparent;
       border-right-color: var(--gold);
     }
+
+    /* حالة الطي — القائمة تختفي والزر العائم يرجعها */
+    body.sidebar-collapsed nav { width: 0; padding-right: 0; padding-left: 0; }
+    body.sidebar-collapsed .page { margin-right: 0; }
+    body.sidebar-collapsed #page-reports { margin-right: 0; }
+    #sidebar-toggle { display: flex; }
+    body.sidebar-collapsed #sidebar-toggle { right: 12px; }
   }
 
   /* ── LAYOUT ── */
@@ -1130,6 +1156,9 @@
   <button class="nav-btn" data-nav="users" onclick="showPage('users', this)" style="color:var(--green-acc);display:none;">👥 المستخدمون</button>
   <button class="nav-btn" data-nav="auditlog" onclick="showPage('auditlog', this)" style="color:var(--amber);">🕐 سجل التعديلات</button>
 </nav>
+
+<!-- زر طي/فتح القائمة الجانبية -->
+<button id="sidebar-toggle" onclick="window.toggleSidebar()" title="طي/فتح القائمة الجانبية">◀</button>
 
 <!-- زر المهام العائم — أيقونة صغيرة بالزاوية تفتح لوحة مصغّرة بدل صفحة كاملة -->
 <button id="tasks-fab" data-nav="tasks" onclick="window.toggleTasksFab()" title="المهام" style="
@@ -3100,6 +3129,21 @@ window.showPage = function(id, btn) {
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
 }
+
+// طي/فتح القائمة الجانبية — يحفظ الحالة عشان تبقى كما هي بعد تحديث الصفحة
+window.toggleSidebar = function() {
+  const collapsed = document.body.classList.toggle('sidebar-collapsed');
+  const btn = document.getElementById('sidebar-toggle');
+  if (btn) btn.textContent = collapsed ? '▶' : '◀';
+  try { localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0'); } catch(e) {}
+};
+try {
+  if (localStorage.getItem('sidebarCollapsed') === '1') {
+    document.body.classList.add('sidebar-collapsed');
+    const stBtn = document.getElementById('sidebar-toggle');
+    if (stBtn) stBtn.textContent = '▶';
+  }
+} catch(e) {}
 
 const contracts = [];
 
