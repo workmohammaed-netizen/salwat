@@ -117,6 +117,38 @@
     border-bottom-color: var(--gold);
   }
 
+  /* ── NAV كقائمة جانبية على شاشات الكمبيوتر (بدل شريط أفقي أعلى الصفحة) ── */
+  @media (min-width: 901px) {
+    nav {
+      position: fixed;
+      top: 64px; right: 0; bottom: 0;
+      width: 190px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 3px;
+      padding: 18px 10px;
+      border-bottom: none;
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      z-index: 90;
+    }
+    .nav-btn {
+      padding: 11px 14px;
+      text-align: right;
+      border-bottom: none;
+      border-right: 3px solid transparent;
+      border-radius: 8px;
+      top: 0;
+      width: 100%;
+    }
+    .nav-btn:hover { background: var(--sand); }
+    .nav-btn.active {
+      background: var(--sand);
+      border-bottom-color: transparent;
+      border-right-color: var(--gold);
+    }
+  }
+
   /* ── LAYOUT ── */
   .page { display: none; padding: 28px 32px 48px; max-width: 1400px; margin: 0 auto; }
   .page.active { display: block; }
@@ -951,6 +983,11 @@
     width: 100%;
     margin: 0;
   }
+  /* إفساح مكان للقائمة الجانبية على شاشات الكمبيوتر */
+  @media (min-width: 901px) {
+    .page { margin-right: 190px; }
+    #page-reports { margin-right: 190px; width: auto; }
+  }
   #page-reports .rpt-shell { box-shadow:none; }
   #page-reports tr:hover td { background: rgba(255,255,255,.045); }
   #page-reports .badge-green { background: rgba(184,144,100,.22); color:#E7D2AE; }
@@ -1070,12 +1107,30 @@
   <button class="nav-btn" data-nav="operations" onclick="showPage('operations', this)">التشغيل</button>
   <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();">الدفعات</button>
   <button class="nav-btn" data-nav="alerts" onclick="showPage('alerts', this)">التنبيهات</button>
-  <button class="nav-btn" data-nav="tasks" onclick="showPage('tasks', this)">📋 المهام</button>
   <button class="nav-btn active" data-nav="reports" onclick="showPage('reports', this)">التقارير</button>
   <button class="nav-btn" data-nav="database" onclick="showPage('database', this)">قاعدة البيانات</button>
   <button class="nav-btn" data-nav="users" onclick="showPage('users', this)" style="color:var(--green-acc);display:none;">👥 المستخدمون</button>
   <button class="nav-btn" data-nav="auditlog" onclick="showPage('auditlog', this)" style="color:var(--amber);">🕐 سجل التعديلات</button>
 </nav>
+
+<!-- زر المهام العائم — أيقونة صغيرة بالزاوية تفتح لوحة مصغّرة بدل صفحة كاملة -->
+<button id="tasks-fab" data-nav="tasks" onclick="window.toggleTasksFab()" title="المهام" style="
+  position:fixed; bottom:22px; left:22px; width:52px; height:52px; border-radius:50%;
+  background:var(--gold); color:#fff; border:none; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  font-size:21px; cursor:pointer; z-index:210; display:none; align-items:center; justify-content:center;">
+  📋
+  <span id="tasks-fab-badge" style="display:none;position:absolute;top:-3px;left:-3px;min-width:18px;height:18px;padding:0 5px;background:var(--red);color:#fff;border-radius:9px;font-size:10.5px;font-weight:700;align-items:center;justify-content:center;"></span>
+</button>
+<div id="tasks-fab-panel" style="
+  display:none; flex-direction:column; position:fixed; bottom:84px; left:22px; width:340px; max-height:440px;
+  background:var(--white); border:1px solid var(--border); border-radius:14px;
+  box-shadow:0 16px 40px rgba(0,0,0,.22); z-index:210; overflow:hidden;">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="font-size:13px;font-weight:600;color:var(--ink);">📋 المهام</div>
+    <button class="btn-sm" onclick="window.openTasksFullPage()" style="font-size:11px;padding:4px 10px;">فتح الصفحة</button>
+  </div>
+  <div id="tasks-fab-list" style="padding:10px 12px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;"></div>
+</div>
 
 
 <!-- ═══════════════════════════════════════
@@ -3024,7 +3079,7 @@ window.showPage = function(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
 const contracts = [];
@@ -11180,22 +11235,41 @@ window.renderMyPendingTasks = function() {
     }
   }
 
-  // شارة العدّاد على زر المهام في شريط التنقل
-  const tasksBtn = document.querySelector('[data-nav="tasks"]');
-  if (tasksBtn) {
-    let badge = tasksBtn.querySelector('#tasks-nav-badge');
-    if (pending.length) {
-      if (!badge) {
-        badge = document.createElement('span');
-        badge.id = 'tasks-nav-badge';
-        badge.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-right:6px;background:var(--red);color:#fff;border-radius:9px;font-size:10.5px;font-weight:700;vertical-align:middle;';
-        tasksBtn.appendChild(badge);
-      }
-      badge.textContent = pending.length;
-    } else if (badge) {
-      badge.remove();
-    }
+  // الزر العائم للمهام: يظهر فقط لمن يملك صلاحية عرض المهام
+  const fab = document.getElementById('tasks-fab');
+  if (fab) fab.style.display = can('tasks','view') ? 'flex' : 'none';
+
+  // شارة العدّاد على الزر العائم
+  const fabBadge = document.getElementById('tasks-fab-badge');
+  if (fabBadge) {
+    if (pending.length) { fabBadge.style.display = 'flex'; fabBadge.textContent = pending.length; }
+    else fabBadge.style.display = 'none';
   }
+
+  // قائمة اللوحة المصغّرة المنسدلة من الزر العائم — كل المهام المفتوحة (لي أو أنشأتها)، الأولوية للي دوري فيها
+  const fabList = document.getElementById('tasks-fab-list');
+  if (fabList) {
+    const relevant = window.tasksLog
+      .filter(t => isTaskForMe(t) || t.createdById === currentUser.id)
+      .sort((a,b) => myTurnOnTask(b)-myTurnOnTask(a) || (a.status==='done')-(b.status==='done') || b.id-a.id)
+      .slice(0, 15);
+    fabList.innerHTML = relevant.length
+      ? relevant.map(t => taskRowHtml(t, { showDelete:false })).join('')
+      : '<div style="text-align:center;padding:16px;color:var(--ink-3);font-size:12px;">لا توجد مهام حالياً</div>';
+  }
+};
+
+window.toggleTasksFab = function(forceOpen) {
+  const panel = document.getElementById('tasks-fab-panel');
+  if (!panel) return;
+  const open = forceOpen !== undefined ? forceOpen : panel.style.display === 'none';
+  panel.style.display = open ? 'flex' : 'none';
+};
+
+window.openTasksFullPage = function() {
+  window.toggleTasksFab(false);
+  window.showPage('tasks', null);
+  if (window.renderTasksPage) window.renderTasksPage();
 };
 
 /* ── نافذة المحادثة (التذكرة) — عرض الردود + صندوق الرد المناسب لدور المستخدم الحالي ── */
