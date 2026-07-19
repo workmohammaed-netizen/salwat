@@ -11248,10 +11248,7 @@ function renderTaskThreadBody() {
   } else if (iAmAssignee) {
     replyHtml = `
       <textarea class="form-input" id="thread-reply-text" rows="2" placeholder="اكتب ردك..." style="resize:vertical;margin-bottom:8px;"></textarea>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-sm" onclick="window.sendTaskReply('done_report')" style="flex:1;background:var(--green-acc);border-color:var(--green-acc);color:#fff;">✓ إبلاغ بالإنجاز</button>
-        <button class="btn-sm" onclick="window.sendTaskReply('blocked_report')" style="flex:1;background:var(--red);border-color:var(--red);color:#fff;">⚠ إبلاغ بتعطل</button>
-      </div>`;
+      <button class="btn-sm btn-primary" onclick="window.sendTaskReply('update')" style="width:100%;">✉ إرسال</button>`;
   } else if (iAmCreator) {
     replyHtml = `
       <textarea class="form-input" id="thread-reply-text" rows="2" placeholder="اكتب ملاحظة أو متابعة..." style="resize:vertical;margin-bottom:8px;"></textarea>
