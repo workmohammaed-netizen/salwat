@@ -1384,13 +1384,19 @@
     </div>
     <div class="two-col">
       <div class="card">
-        <div class="card-head" style="background:var(--red-light);color:var(--red);">🔴 عملاء متعثرون</div>
-        <div id="alerts-defaulted-list" style="padding:20px;display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="card-head" style="background:var(--red-light);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-defaulted-list', this)">
+          <span>🔴 عملاء متعثرون <span id="alerts-defaulted-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+        </div>
+        <div id="alerts-defaulted-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
 
       <div class="card">
-        <div class="card-head" style="background:var(--amber-light);color:var(--amber);">⚠️ عقود تحتاج متابعة</div>
-        <div id="alerts-followup-list" style="padding:20px;display:flex;flex-direction:column;gap:10px;"></div>
+        <div class="card-head" style="background:var(--amber-light);color:var(--amber);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-followup-list', this)">
+          <span>⚠️ عقود تحتاج متابعة <span id="alerts-followup-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+        </div>
+        <div id="alerts-followup-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
     </div>
   </div>
@@ -3317,6 +3323,8 @@ window.renderAlerts = function() {
       </div>`;
     }).join('') : `<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px;">لا يوجد عملاء متعثرون حالياً ✓</div>`;
   }
+  const defCountEl = document.getElementById('alerts-defaulted-count');
+  if (defCountEl) defCountEl.textContent = defaulted.length ? `(${defaulted.length})` : '';
 
   // 3) عقود تحتاج متابعة — لم يبدأ (لم يتم التوقيع) أو بدون تسعير
   const followup = contracts.filter(c => {
@@ -3337,6 +3345,8 @@ window.renderAlerts = function() {
       </div>`;
     }).join('') : `<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px;">لا توجد عقود تحتاج متابعة حالياً ✓</div>`;
   }
+  const fuCountEl = document.getElementById('alerts-followup-count');
+  if (fuCountEl) fuCountEl.textContent = followup.length ? `(${followup.length})` : '';
 };
 
 function refreshAllStatuses() {
