@@ -7454,6 +7454,7 @@ function toggleByPerm(page) {
 }
 
 window.doLogout = async function() {
+  if (window.teardownTaskRealtime) window.teardownTaskRealtime();
   await supabaseClient.auth.signOut();
   currentUser = { name: '', email: '', role: 'user', perms: {} };
   document.getElementById('user-badge').style.display = 'none';
@@ -7903,6 +7904,7 @@ window.loadAllAppData = async function() {
   await loadAuditLog();
   await loadManualPayments();
   if (window.loadTasks) await window.loadTasks();
+  if (window.setupTaskRealtime) window.setupTaskRealtime();
   if (window.renderAuditLog) renderAuditLog();
   if (window.filterContracts) filterContracts();
   if (window.renderReports) renderReports();
@@ -11027,6 +11029,63 @@ async function loadTasks() {
   if (!usersRes.error) taskAssignableUsers = usersRes.data || [];
 }
 window.loadTasks = loadTasks;
+
+/* ── إشعارات فورية (Realtime): شريط يظهر ويختفي عند إسناد مهمة جديدة أو وصول رد ── */
+let taskRealtimeChannel = null;
+function setupTaskRealtime() {
+  if (taskRealtimeChannel) return;
+  taskRealtimeChannel = supabaseClient.channel('tasks-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload) => {
+      const r = payload.new;
+      if (window.tasksLog.some(t => t.id === r.id)) return; // أدرجناها محلياً مسبقاً (نحن من أنشأها)
+      const t = {
+        id: r.id, title: r.title, description: r.description || '',
+        assigneeType: r.assignee_type, assigneeUserId: r.assignee_user_id, assigneeRole: r.assignee_role || '',
+        dueDate: r.due_date, status: r.status,
+        createdBy: r.created_by || '', createdById: r.created_by_id,
+        completedBy: r.completed_by || '', completedAt: r.completed_at,
+        createdAt: r.created_at,
+      };
+      window.tasksLog.unshift(t);
+      if (r.created_by_id !== currentUser.id && isTaskForMe(t)) {
+        showToast(`📋 مهمة جديدة من ${t.createdBy}: ${t.title}`);
+      }
+      if (window.renderTasksPage) window.renderTasksPage();
+      if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, (payload) => {
+      const r = payload.new;
+      const t = window.tasksLog.find(x => x.id === r.id);
+      if (!t) return;
+      const wasDone = t.status === 'done';
+      t.status = r.status; t.completedBy = r.completed_by || ''; t.completedAt = r.completed_at;
+      if (!wasDone && t.status === 'done' && r.completed_by !== currentUser.name && (t.createdById === currentUser.id || isTaskForMe(t))) {
+        showToast(`✅ أُنهيت مهمة "${t.title}"`);
+      }
+      if (window.renderTasksPage) window.renderTasksPage();
+      if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+      if (activeThreadTaskId === t.id) renderTaskThreadBody();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_messages' }, (payload) => {
+      const r = payload.new;
+      const list = window.taskMessagesLog[r.task_id] = window.taskMessagesLog[r.task_id] || [];
+      if (list.some(m => m.id === r.id)) return; // أدرجناها محلياً مسبقاً (نحن من أرسلها)
+      const m = { id: r.id, taskId: r.task_id, senderId: r.sender_id, senderName: r.sender_name || '', body: r.body, kind: r.reply_kind || 'update', createdAt: r.created_at };
+      list.push(m);
+      const t = window.tasksLog.find(x => x.id === r.task_id);
+      if (t && r.sender_id !== currentUser.id && (t.createdById === currentUser.id || isTaskForMe(t))) {
+        showToast(`💬 رد جديد على "${t.title}" من ${m.senderName}`);
+      }
+      if (window.renderTasksPage) window.renderTasksPage();
+      if (window.renderMyPendingTasks) window.renderMyPendingTasks();
+      if (activeThreadTaskId === r.task_id) renderTaskThreadBody();
+    })
+    .subscribe();
+}
+window.setupTaskRealtime = setupTaskRealtime;
+window.teardownTaskRealtime = function() {
+  if (taskRealtimeChannel) { supabaseClient.removeChannel(taskRealtimeChannel); taskRealtimeChannel = null; }
+};
 
 function isTaskForMe(t) {
   if (t.assigneeType === 'user') return t.assigneeUserId === currentUser.id;
