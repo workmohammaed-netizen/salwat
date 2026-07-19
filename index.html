@@ -623,6 +623,24 @@
     z-index: 999; pointer-events: none; white-space: nowrap;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* إشعارات المهام — بطاقة كاملة التفاصيل تنزلق من اليسار للراحة في اليمين ثم ترجع وتختفي */
+  #task-notif-stack {
+    position: fixed; top: 76px; right: 20px; z-index: 9998;
+    display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+    pointer-events: none;
+  }
+  .task-notif-card {
+    pointer-events: auto;
+    width: 340px; max-width: calc(100vw - 40px);
+    background: var(--white); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.18);
+    padding: 14px 16px; cursor: pointer;
+    opacity: 0; transform: translateX(-70px);
+    transition: opacity .35s ease, transform .35s ease;
+  }
+  .task-notif-card.show { opacity: 1; transform: translateX(0); }
+  .task-notif-card.hide { opacity: 0; transform: translateX(-70px); }
 </style>
 <style>
   /* ── AUTH SCREEN ── */
@@ -11030,7 +11048,39 @@ async function loadTasks() {
 }
 window.loadTasks = loadTasks;
 
-/* ── إشعارات فورية (Realtime): شريط يظهر ويختفي عند إسناد مهمة جديدة أو وصول رد ── */
+/* ── إشعار مهمة غني بالتفاصيل — بطاقة تنزلق من اليسار وتستقر باليمين، ثم ترجع وتختفي ── */
+function showTaskNotification(opts) {
+  let stack = document.getElementById('task-notif-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'task-notif-stack';
+    document.body.appendChild(stack);
+  }
+  const card = document.createElement('div');
+  card.className = 'task-notif-card';
+  card.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="width:34px;height:34px;border-radius:8px;background:var(--gold-light);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${opts.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.03em;">${esc(opts.heading)}</div>
+        <div style="font-size:13.5px;font-weight:600;color:var(--ink);margin-top:2px;">${esc(opts.title)}</div>
+        ${opts.sub ? `<div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;">${esc(opts.sub)}</div>` : ''}
+        ${opts.body ? `<div style="font-size:12px;color:var(--ink-2);margin-top:6px;background:var(--sand);border-radius:8px;padding:8px 10px;white-space:pre-wrap;">${esc(opts.body)}</div>` : ''}
+      </div>
+      <button onclick="event.stopPropagation();this.closest('.task-notif-card').remove();" style="background:none;border:none;color:var(--ink-3);cursor:pointer;font-size:14px;flex-shrink:0;padding:0;">✕</button>
+    </div>`;
+  if (opts.onClick) card.addEventListener('click', opts.onClick);
+  stack.appendChild(card);
+  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('show')));
+  const dismiss = () => {
+    card.classList.remove('show');
+    card.classList.add('hide');
+    setTimeout(() => card.remove(), 400);
+  };
+  setTimeout(dismiss, 6500);
+}
+
+/* ── إشعارات فورية (Realtime): تصل لحظياً عند إسناد مهمة جديدة أو وصول رد أو إنهاء مهمة ── */
 let taskRealtimeChannel = null;
 function setupTaskRealtime() {
   if (taskRealtimeChannel) return;
@@ -11048,7 +11098,13 @@ function setupTaskRealtime() {
       };
       window.tasksLog.unshift(t);
       if (r.created_by_id !== currentUser.id && isTaskForMe(t)) {
-        showToast(`📋 مهمة جديدة من ${t.createdBy}: ${t.title}`);
+        const dueTxt = t.dueDate ? new Date(t.dueDate+'T00:00:00').toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+        showTaskNotification({
+          icon: '📋', heading: 'مهمة جديدة', title: t.title,
+          sub: `من ${t.createdBy}${dueTxt ? ' · يستحق ' + dueTxt : ''}`,
+          body: t.description || '',
+          onClick: () => window.openTaskThread(t.id),
+        });
       }
       if (window.renderTasksPage) window.renderTasksPage();
       if (window.renderMyPendingTasks) window.renderMyPendingTasks();
@@ -11060,7 +11116,11 @@ function setupTaskRealtime() {
       const wasDone = t.status === 'done';
       t.status = r.status; t.completedBy = r.completed_by || ''; t.completedAt = r.completed_at;
       if (!wasDone && t.status === 'done' && r.completed_by !== currentUser.name && (t.createdById === currentUser.id || isTaskForMe(t))) {
-        showToast(`✅ أُنهيت مهمة "${t.title}"`);
+        showTaskNotification({
+          icon: '✅', heading: 'تم إنهاء المهمة', title: t.title,
+          sub: `بواسطة ${r.completed_by || t.createdBy}`,
+          onClick: () => window.openTaskThread(t.id),
+        });
       }
       if (window.renderTasksPage) window.renderTasksPage();
       if (window.renderMyPendingTasks) window.renderMyPendingTasks();
@@ -11074,7 +11134,12 @@ function setupTaskRealtime() {
       list.push(m);
       const t = window.tasksLog.find(x => x.id === r.task_id);
       if (t && r.sender_id !== currentUser.id && (t.createdById === currentUser.id || isTaskForMe(t))) {
-        showToast(`💬 رد جديد على "${t.title}" من ${m.senderName}`);
+        showTaskNotification({
+          icon: '💬', heading: 'رد جديد', title: t.title,
+          sub: `من ${m.senderName}`,
+          body: m.body,
+          onClick: () => window.openTaskThread(t.id),
+        });
       }
       if (window.renderTasksPage) window.renderTasksPage();
       if (window.renderMyPendingTasks) window.renderMyPendingTasks();
