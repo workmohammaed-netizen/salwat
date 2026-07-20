@@ -5538,19 +5538,25 @@ window.closeOpsDrill = function() {
 window.showOpsDrill = function(metric) {
   if (rptOpsDrillMetric === metric) { window.closeOpsDrill(); return; }
   rptOpsDrillMetric = metric;
-  const list = contracts;
+  // كل المقاييس (عدا إجمالي العقود) تعكس فقط العقود الشغّالة فعلياً اليوم — يطابق أرقام البطاقات بالأعلى
+  const today = new Date(); today.setHours(0,0,0,0);
+  const activeToday = contracts.filter(c => {
+    const s = parseDate(c.start), e = parseDate(c.end);
+    return (!s || s <= today) && (!e || e >= today);
+  });
+  const list = metric === 'total' ? contracts : activeToday;
   let title, rows;
   if (metric === 'buses') {
-    title = 'إجمالي الحافلات حسب العميل';
+    title = 'إجمالي الحافلات اليوم حسب العميل';
     rows = groupByClient(list, c=>c.buses||0).map(r=>({...r, display: r.value+' حافلة', sub: r.count+' عقد'}));
   } else if (metric === 'days') {
-    title = 'أيام التشغيل حسب العميل';
+    title = 'أيام التشغيل حسب العميل (عقود اليوم)';
     rows = groupByClient(list, c=>c.days||0).map(r=>({...r, display: fmtN(r.value)+' يوم', sub: r.count+' عقد'}));
   } else if (metric === 'active') {
-    title = 'العملاء أصحاب العقود النشطة تشغيلياً';
+    title = 'العملاء أصحاب العقود النشطة تشغيلياً اليوم';
     rows = groupByClient(list.filter(c=>c.buses>0), ()=>1).map(r=>({...r, value:r.count, display: r.count+' عقد', sub:''}));
   } else if (metric === 'hotels') {
-    title = 'الفنادق النشطة تشغيلياً';
+    title = 'الفنادق النشطة تشغيلياً اليوم';
     rows = groupByHotel(list.filter(c=>c.buses>0), ()=>1).map(r=>({...r, value:r.count, display: r.count+' عقد نشط', sub:''}));
   } else {
     title = 'إجمالي العقود حسب العميل';
@@ -5829,8 +5835,11 @@ function renderOpsContractCards(all) {
   const box = document.getElementById('rpt-ops-contract-grid');
   if (!box) return;
   const today = new Date(); today.setHours(0,0,0,0);
-  // إخفاء العقود التي انتهى تشغيلها بالفعل (تاريخ النهاية أقدم من اليوم)
-  const list = all.filter(c => { const e = parseDate(c.end); return !e || e >= today; });
+  // نعرض فقط العقود الشغّالة فعلياً اليوم (بدأت وما انتهت) — تستثني المنتهية واللي لسا ما بدأت
+  const list = all.filter(c => {
+    const s = parseDate(c.start), e = parseDate(c.end);
+    return (!s || s <= today) && (!e || e >= today);
+  });
   const names = groupByClient(list, ()=>0).sort((a,b)=>a.label.localeCompare(b.label,'ar'));
   box.innerHTML = names.length ? names.map(n => `
     <div class="rpt-client-chip${rptOpsContractsOpenClient===n.label?' open':''}" onclick="toggleOpsContractsClient('${escJs(n.label)}')">
@@ -5901,19 +5910,22 @@ window.renderReports = function() {
   renderCollectionChart(collectionMap);
 
   /* ─── OPERATIONS ─── */
-  const totalBuses=all.reduce((s,c)=>s+c.buses,0);
-  const totalDays =all.reduce((s,c)=>s+c.days,0);
-  // فنادق نشطة = فقط العقود اللي فعلاً شغّالة الآن (بدأت وما انتهت) — تستثني العقود المنتهية
+  // "كل شي حالي" — كل أرقام لوحة القيادة التشغيلية تعكس فقط العقود الشغّالة فعلياً اليوم
+  // (بدأت وما انتهت)، تتحدّث تلقائياً كل يوم حسب تاريخ اليوم عند فتح الصفحة — بدون أي تدخّل يدوي
   const opsToday = new Date(); opsToday.setHours(0,0,0,0);
-  const activeHotelsCount = new Set(all.filter(c => {
-    if (!(c.buses>0)) return false;
+  const opsActiveToday = all.filter(c => {
     const s = parseDate(c.start), e = parseDate(c.end);
     return (!s || s <= opsToday) && (!e || e >= opsToday);
-  }).map(c=>c.hotel)).size;
-  renderOpsBento(totalBuses, totalDays, all.filter(c=>c.buses>0).length, all.length, activeHotelsCount);
+  });
+  const totalBuses = opsActiveToday.reduce((s,c)=>s+c.buses,0);
+  const totalDays  = opsActiveToday.reduce((s,c)=>s+c.days,0);
+  // فنادق نشطة = فقط العقود اللي فعلاً شغّالة الآن (بدأت وما انتهت) — تستثني العقود المنتهية
+  const activeHotelsCount = new Set(opsActiveToday.filter(c=>c.buses>0).map(c=>c.hotel)).size;
+  // "عقود نشطة" = من ضمن إجمالي العقود بقاعدة البيانات، كم عقد شغّال فعلياً اليوم
+  renderOpsBento(totalBuses, totalDays, opsActiveToday.length, all.length, activeHotelsCount);
 
   const axisMap={};
-  all.forEach(c=>{const k=c.axis||'غير محدد';if(!axisMap[k])axisMap[k]={buses:0,days:0,hotels:0};axisMap[k].buses+=c.buses;axisMap[k].days+=c.days;axisMap[k].hotels++;});
+  opsActiveToday.forEach(c=>{const k=c.axis||'غير محدد';if(!axisMap[k])axisMap[k]={buses:0,days:0,hotels:0};axisMap[k].buses+=c.buses;axisMap[k].days+=c.days;axisMap[k].hotels++;});
   let aB=0,aD=0,aH=0;
   document.getElementById('rpt-ops-axis-body').innerHTML = Object.entries(axisMap).sort((a,b)=>b[1].buses-a[1].buses).map(([name,v])=>{aB+=v.buses;aD+=v.days;aH+=v.hotels;const avg=v.hotels>0?Math.round(v.days/v.hotels):0;return`<tr><td style="font-weight:500;">${esc(name)}</td><td style="text-align:center;font-weight:600;color:var(--green-dark);">${v.buses}</td><td style="text-align:center;">${fmtN(v.days)}</td><td style="text-align:center;">${v.hotels}</td><td style="text-align:center;color:var(--ink-3);">${avg}</td></tr>`;}).join('');
   document.getElementById('rpt-ops-axis-foot').innerHTML = `<tr style="background:var(--sand);font-weight:600;"><td>الإجمالي</td><td style="text-align:center;">${aB}</td><td style="text-align:center;">${fmtN(aD)}</td><td style="text-align:center;">${aH}</td><td></td></tr>`;
@@ -5924,8 +5936,8 @@ window.renderReports = function() {
   document.getElementById('rpt-ops-points-body').innerHTML = pts.map(p=>`<tr><td style="font-weight:500;">${p.point}</td><td style="text-align:center;font-weight:600;color:var(--green-dark);">${p.buses}</td><td style="text-align:center;">${p.contracts}</td></tr>`).join('');
   renderPointsDonut(pts);
 
-  document.getElementById('rpt-ops-contracts-body').innerHTML = all.map(c=>`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td style="font-size:12px;">${esc(c.axis)}</td><td style="font-size:12px;">عادي</td><td style="font-size:12px;">${esc(c.carrier)}</td><td style="text-align:center;font-weight:600;">${c.buses||'—'}</td><td style="font-size:12px;">${c.start}</td><td style="font-size:12px;">${c.end}</td><td style="text-align:center;">${c.days}</td><td class="amount">${c.price?fmtN(c.price):'—'}</td></tr>`).join('');
-  renderOpsContractCards(all);
+  document.getElementById('rpt-ops-contracts-body').innerHTML = opsActiveToday.map(c=>`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td style="font-size:12px;">${esc(c.axis)}</td><td style="font-size:12px;">عادي</td><td style="font-size:12px;">${esc(c.carrier)}</td><td style="text-align:center;font-weight:600;">${c.buses||'—'}</td><td style="font-size:12px;">${c.start}</td><td style="font-size:12px;">${c.end}</td><td style="text-align:center;">${c.days}</td><td class="amount">${c.price?fmtN(c.price):'—'}</td></tr>`).join('');
+  renderOpsContractCards(opsActiveToday);
 
   /* ─── ALERTS ─── */
   const defaulted  = all.filter(c=>c.status==='متعثر'||c.status==='تعثر متوقع');
