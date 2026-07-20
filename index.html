@@ -30,6 +30,7 @@
     --shadow-card:    0 1px 3px oklch(22% .01 40 / .04), 0 8px 24px -8px oklch(22% .01 40 / .08);
     --shadow-gold:    0 12px 40px -12px oklch(68% .075 65 / .45);
     --shadow-elegant: 0 20px 60px -20px oklch(22% .01 40 / .25);
+    --gradient-gold:  linear-gradient(135deg, oklch(68% .075 65), oklch(78% .09 68));
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -298,6 +299,37 @@
     background: var(--gold);
     border-radius: 2px;
   }
+
+  /* ── PAGE HEADER (نمط الموقع الجديد: أيقونة + عنوان + وصف + إجراءات) ── */
+  .page-header {
+    display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;
+    gap: 16px; margin-top: 24px; margin-bottom: 20px;
+  }
+  .page-header-main { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+  .page-header-icon {
+    width: 44px; height: 44px; border-radius: calc(var(--radius) - 2px); flex-shrink: 0;
+    background: var(--gradient-gold, var(--gold)); box-shadow: var(--shadow-gold);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .page-header-title { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .page-header-desc { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; max-width: 560px; }
+  .page-header-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ph-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: calc(var(--radius) - 4px);
+    font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--border); background: var(--white); color: var(--ink);
+    transition: background .15s, transform .15s;
+  }
+  .ph-btn:hover { background: var(--sand); }
+  .ph-btn.ph-primary {
+    background: var(--gradient-gold, var(--gold)); color: var(--ink); border-color: transparent;
+    box-shadow: var(--shadow-gold); font-weight: 600;
+  }
+  .ph-btn.ph-primary:hover { transform: translateY(-1px); }
+  .ph-btn.ph-import { background: oklch(55% .12 155 / .1); border-color: oklch(55% .12 155 / .4); color: oklch(40% .12 155); }
+  .ph-btn.ph-import:hover { background: oklch(55% .12 155 / .16); }
+
   .btn-sm {
     padding: 6px 14px;
     font-size: 12px;
@@ -412,7 +444,9 @@
     padding: 11px 14px;
     text-align: right;
     font-weight: 500;
-    font-size: 11px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
     color: var(--ink-3);
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
@@ -1199,47 +1233,56 @@
 ═══════════════════════════════════════ -->
 <div class="page" id="page-contracts">
 
-  <div class="filter-bar" style="margin-top:24px;">
-    <span class="filter-label">المحور:</span>
-    <select class="filter-select" id="filter-axis" onchange="filterContracts()">
-      <option value="">الكل</option>
-      <option>باب علي</option>
-      <option>جبل الكعبة - غرب</option>
-      <option>شعب عامر</option>
-      <option>ريع بخش</option>
-      <option>كدي</option>
-      <option>المسخوطة</option>
-    </select>
-    <div class="filter-divider"></div>
-    <span class="filter-label">الناقل:</span>
-    <select class="filter-select" id="filter-carrier" onchange="filterContracts()">
-      <option value="">الكل</option>
-      <option>رواحل</option>
-      <option>دله</option>
-      <option>حافل</option>
-      <option>غير متعاقد</option>
-    </select>
-    <div class="filter-divider"></div>
-    <span class="filter-label">الحالة:</span>
-    <select class="filter-select" id="filter-status" onchange="filterContracts()">
-      <option value="">الكل</option>
-      <option>نشط</option>
-      <option>مكتمل</option>
-      <option>متعثر</option>
-      <option>تعثر متوقع</option>
-      <option>لم يبدأ</option>
-      <option>بدون تسعير</option>
-    </select>
-    <div class="filter-info">إجمالي: <strong id="contract-count">8</strong> عقد</div>
-    <button class="btn-sm btn-primary" onclick="filterContracts()">تطبيق</button>
-    <button class="btn-sm export-xls" onclick="exportContracts('excel')">⬇ Excel</button>
-    <button class="btn-sm export-pdf" onclick="exportContracts('pdf')">⬇ PDF</button>
-    <button class="btn-sm" onclick="openModal()" style="background:var(--gold);border-color:var(--gold);color:#FFFFFF;font-weight:500;margin-right:auto;">+ إضافة عقد</button>
-    <button class="btn-sm" onclick="triggerExcelImport()" style="background:#1D6F42;border-color:#1D6F42;color:#FFFFFF;font-weight:500;">📥 استيراد إكسل</button>
-    <input type="file" id="import-excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleExcelImport(event)">
+  <div class="page-header">
+    <div class="page-header-main">
+      <div class="page-header-icon">📄</div>
+      <div>
+        <div class="page-header-title">العقود</div>
+        <div class="page-header-desc">إدارة كاملة لعقود شركات النقل والحملات مع تتبع الحالة والمستحقات.</div>
+      </div>
+    </div>
+    <div class="page-header-actions">
+      <button class="ph-btn" onclick="exportContracts('excel')">⬇ Excel</button>
+      <button class="ph-btn" onclick="exportContracts('pdf')">⬇ PDF</button>
+      <button class="ph-btn ph-import" onclick="triggerExcelImport()">📥 استيراد إكسل</button>
+      <button class="ph-btn ph-primary" onclick="openModal()">+ إضافة عقد</button>
+      <input type="file" id="import-excel-input" accept=".xlsx,.xls" style="display:none" onchange="handleExcelImport(event)">
+    </div>
   </div>
 
   <div class="card">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--sand);">
+      <span class="filter-label">المحور:</span>
+      <select class="filter-select" id="filter-axis" onchange="filterContracts()">
+        <option value="">الكل</option>
+        <option>باب علي</option>
+        <option>جبل الكعبة - غرب</option>
+        <option>شعب عامر</option>
+        <option>ريع بخش</option>
+        <option>كدي</option>
+        <option>المسخوطة</option>
+      </select>
+      <span class="filter-label">الناقل:</span>
+      <select class="filter-select" id="filter-carrier" onchange="filterContracts()">
+        <option value="">الكل</option>
+        <option>رواحل</option>
+        <option>دله</option>
+        <option>حافل</option>
+        <option>غير متعاقد</option>
+      </select>
+      <span class="filter-label">الحالة:</span>
+      <select class="filter-select" id="filter-status" onchange="filterContracts()">
+        <option value="">الكل</option>
+        <option>نشط</option>
+        <option>مكتمل</option>
+        <option>متعثر</option>
+        <option>تعثر متوقع</option>
+        <option>لم يبدأ</option>
+        <option>بدون تسعير</option>
+      </select>
+      <button class="btn-sm" onclick="filterContracts()">تطبيق</button>
+      <div class="filter-info" style="margin-right:auto;">إجمالي: <strong id="contract-count">8</strong> عقد</div>
+    </div>
     <div class="table-wrap">
       <table id="contracts-table">
         <thead>
