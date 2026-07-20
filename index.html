@@ -824,9 +824,9 @@
   @property --p { syntax:'<number>'; inherits:true; initial-value:0; }
 
   .rpt-shell {
-    background: linear-gradient(160deg,#242220 0%, #2E2B28 55%, #38352F 100%);
-    border-radius: 20px; padding: 26px 28px; margin-bottom: 26px;
-    position: relative; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+    background: linear-gradient(160deg, oklch(16% .008 40) 0%, oklch(20% .008 40) 55%, oklch(24% .008 40) 100%);
+    border-radius: calc(var(--radius) + 8px); padding: 26px 28px; margin-bottom: 26px;
+    position: relative; overflow: hidden; box-shadow: var(--shadow-elegant);
   }
   .rpt-shell::before {
     content:''; position:absolute; inset:0; pointer-events:none;
@@ -857,7 +857,7 @@
 
   .rpt-gauge-card {
     grid-row: span 2; background: rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.09);
-    border-radius:16px; padding:18px; display:flex; flex-direction:column;
+    border-radius:var(--radius); padding:18px; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:8px; cursor:pointer; transition: background .18s, border-color .18s;
   }
   .rpt-gauge-card:hover { background: rgba(255,255,255,.075); }
@@ -873,7 +873,7 @@
   .rpt-ring-lbl { position:relative; z-index:1; font-size:10.5px; color:rgba(255,255,255,.5); text-align:center; margin-top:2px; }
 
   .rpt-tile {
-    background: rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.09); border-radius:14px;
+    background: rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.09); border-radius:calc(var(--radius) - 2px);
     padding:14px 16px; position:relative; overflow:hidden; cursor:pointer;
     transition: transform .18s, background .18s, border-color .18s;
   }
@@ -1020,18 +1020,21 @@
      نزول السكرول المفاجئ عند الضغط على بطاقات المعلومات */
   #page-reports {
     overflow-anchor: none;
-    --white:       #2E2B28;
-    --sand:        #38352F;
-    --ink:         #F5F0E8;
-    --ink-2:       #D8D0C4;
-    --ink-3:       #A89C8A;
-    --border:      rgba(255,255,255,.12);
-    --green-dark:  #F3EADF;
-    --green-light: rgba(184,144,100,.16);
-    --gold-light:  rgba(184,144,100,.22);
-    --amber-light: rgba(240,182,92,.16);
-    --red-light:   rgba(227,103,103,.16);
-    background: linear-gradient(165deg,#242220 0%, #2E2B28 45%, #38352F 100%);
+    /* نفس درجات الوضع الداكن الرسمية بتصميم الموقع الجديد (oklch) */
+    --white:       oklch(22% .008 40);
+    --sand:        oklch(26% .008 40);
+    --ink:         oklch(96% .01 75);
+    --ink-2:       oklch(85% .012 65);
+    --ink-3:       oklch(70% .015 60);
+    --border:      oklch(100% 0 0 / .08);
+    --green-dark:  oklch(94% .02 75);
+    --green-acc:   oklch(68% .075 65);
+    --gold:        oklch(68% .075 65);
+    --green-light: oklch(68% .075 65 / .16);
+    --gold-light:  oklch(68% .075 65 / .22);
+    --amber-light: oklch(75% .13 65 / .18);
+    --red-light:   oklch(55% .19 25 / .18);
+    background: linear-gradient(165deg, oklch(16% .008 40) 0%, oklch(20% .008 40) 45%, oklch(24% .008 40) 100%);
     border-radius: 0;
     box-shadow: none;
     max-width: none;
@@ -9327,20 +9330,20 @@ window.exportClientStatement = function(name, type) {
       <title>كشف حساب — ${esc(name)}</title>
       <style>
         @page{size:A4 landscape;margin:14mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#2A2828;margin:0;direction:rtl}
-        .doc-header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #B89064;padding-bottom:14px;margin-bottom:18px}
+        body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#1F1917;margin:0;direction:rtl}
+        .doc-header{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #B98F67;padding-bottom:14px;margin-bottom:18px}
         .doc-header .brand{display:flex;align-items:center;gap:14px}.doc-header img{height:60px;width:auto}
-        .doc-title{font-size:20px;font-weight:700;color:#302E2E}.doc-sub{font-size:12px;color:#8A8278;margin-top:3px}
-        .doc-meta{text-align:left;font-size:11px;color:#8A8278}.doc-meta strong{color:#302E2E}
+        .doc-title{font-size:20px;font-weight:700;color:#2D2826}.doc-sub{font-size:12px;color:#6A615B;margin-top:3px}
+        .doc-meta{text-align:left;font-size:11px;color:#6A615B}.doc-meta strong{color:#2D2826}
         .summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px}
-        .summary-item{background:#F8F5F1;border-radius:8px;padding:10px 18px;text-align:center}
-        .summary-item .lbl{font-size:10px;color:#8A8278;margin-bottom:3px}.summary-item .val{font-size:16px;font-weight:700;color:#302E2E}
-        .section-lbl{font-size:13px;font-weight:700;color:#302E2E;margin:16px 0 8px;border-bottom:2px solid #B89064;padding-bottom:4px}
+        .summary-item{background:#FCF8F3;border-radius:8px;padding:10px 18px;text-align:center}
+        .summary-item .lbl{font-size:10px;color:#6A615B;margin-bottom:3px}.summary-item .val{font-size:16px;font-weight:700;color:#2D2826}
+        .section-lbl{font-size:13px;font-weight:700;color:#2D2826;margin:16px 0 8px;border-bottom:2px solid #B98F67;padding-bottom:4px}
         table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:14px}
-        thead th{background:#302E2E;color:#fff;padding:8px;text-align:center;font-weight:600;border:1px solid #302E2E}
-        tbody td{padding:6px 8px;text-align:center;border:1px solid #E5DDD2}
-        tbody tr:nth-child(even){background:#F8F5F1}
-        .doc-footer{margin-top:20px;padding-top:10px;border-top:1px solid #E5DDD2;display:flex;justify-content:space-between;font-size:10px;color:#8A8278}
+        thead th{background:#2D2826;color:#fff;padding:8px;text-align:center;font-weight:600;border:1px solid #2D2826}
+        tbody td{padding:6px 8px;text-align:center;border:1px solid #E5DCD4}
+        tbody tr:nth-child(even){background:#FCF8F3}
+        .doc-footer{margin-top:20px;padding-top:10px;border-top:1px solid #E5DCD4;display:flex;justify-content:space-between;font-size:10px;color:#6A615B}
       </style></head><body>
       <div class="doc-header">
         <div class="brand">${logo?`<img src="${logo}">`:''}
@@ -9358,7 +9361,7 @@ window.exportClientStatement = function(name, type) {
       <div class="section-lbl">العقود</div>
       <table><thead><tr>${hdr(columns1)}</tr></thead><tbody>${bdy(rows1)}</tbody></table>
       <div class="section-lbl">سجل الدفعات</div>
-      <table><thead><tr>${hdr(columns2)}</tr></thead><tbody>${rows2.length?bdy(rows2):`<tr><td colspan="5" style="text-align:center;color:#8A8278;">لا توجد دفعات</td></tr>`}</tbody></table>
+      <table><thead><tr>${hdr(columns2)}</tr></thead><tbody>${rows2.length?bdy(rows2):`<tr><td colspan="5" style="text-align:center;color:#6A615B;">لا توجد دفعات</td></tr>`}</tbody></table>
       ${allDiscs.length?`<div class="section-lbl" style="color:#B8772A;">سجل الخصومات</div>
       <table><thead><tr>${hdr(columns3)}</tr></thead><tbody>${bdy(rows3)}<tr style="background:#FBF0E0;font-weight:700;"><td colspan="4">إجمالي الخصومات</td><td style="color:#C0392B;">${totalDiscs.toLocaleString()}</td><td></td></tr></tbody></table>`:''}
       <div class="doc-footer"><span>شركة رواحل المشاعر · RAWAHEL AL MASHAER CO.</span><span>نظام بيان الصلوات</span></div>
@@ -11622,9 +11625,9 @@ window.closeTaskAsDone = async function() {
 /* ═══════════════════════════════════════════════════════════════
    [إضافة جديدة] محرك التصدير — Excel + PDF بهوية رواحل المشاعر
 ═══════════════════════════════════════════════════════════════ */
-const RAWAHEL_GOLD = 'B89064';
-const RAWAHEL_DARK = '302E2E';
-const RAWAHEL_LIGHT= 'F0E6DA';
+const RAWAHEL_GOLD = 'B98F67';
+const RAWAHEL_DARK = '2D2826';
+const RAWAHEL_LIGHT= 'F0E2D1';
 
 // جلب شعار الهيدر من الصفحة (base64) لإعادة استخدامه في التصدير
 function getLogoDataUri() {
@@ -11727,23 +11730,23 @@ window.exportToPDF = function(title, columns, rows, subtitle) {
     <style>
       @page { size: A4 landscape; margin: 14mm; }
       * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      body { font-family:'Segoe UI',Tahoma,Arial,sans-serif; color:#2A2828; margin:0; direction:rtl; }
+      body { font-family:'Segoe UI',Tahoma,Arial,sans-serif; color:#1F1917; margin:0; direction:rtl; }
       .doc-header { display:flex; align-items:center; justify-content:space-between;
         border-bottom:3px solid #${RAWAHEL_GOLD}; padding-bottom:14px; margin-bottom:18px; }
       .doc-header .brand { display:flex; align-items:center; gap:14px; }
       .doc-header img { height:64px; width:auto; }
       .doc-title { font-size:22px; font-weight:700; color:#${RAWAHEL_DARK}; }
-      .doc-sub   { font-size:12px; color:#8A8278; margin-top:3px; }
-      .doc-meta  { text-align:left; font-size:11px; color:#8A8278; }
+      .doc-sub   { font-size:12px; color:#6A615B; margin-top:3px; }
+      .doc-meta  { text-align:left; font-size:11px; color:#6A615B; }
       .doc-meta strong { color:#${RAWAHEL_DARK}; }
       table { width:100%; border-collapse:collapse; font-size:11px; }
       thead th { background:#${RAWAHEL_DARK}; color:#fff; padding:9px 8px; text-align:center;
         font-weight:600; border:1px solid #${RAWAHEL_DARK}; }
-      tbody td { padding:7px 8px; text-align:center; border:1px solid #E5DDD2; }
-      tbody tr:nth-child(even) { background:#F8F5F1; }
+      tbody td { padding:7px 8px; text-align:center; border:1px solid #E5DCD4; }
+      tbody tr:nth-child(even) { background:#FCF8F3; }
       tbody tr:nth-child(odd)  { background:#fff; }
-      .doc-footer { margin-top:20px; padding-top:12px; border-top:1px solid #E5DDD2;
-        display:flex; justify-content:space-between; font-size:10px; color:#8A8278; }
+      .doc-footer { margin-top:20px; padding-top:12px; border-top:1px solid #E5DCD4;
+        display:flex; justify-content:space-between; font-size:10px; color:#6A615B; }
       .count-badge { display:inline-block; background:#${RAWAHEL_LIGHT}; color:#${RAWAHEL_DARK};
         padding:3px 12px; border-radius:12px; font-size:11px; font-weight:600; margin-top:6px; }
     </style></head><body>
