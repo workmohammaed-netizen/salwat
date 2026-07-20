@@ -852,6 +852,8 @@
     font-weight: 600; color: var(--green-dark);
   }
   .pay-empty { text-align:center; padding: 40px 0; color: var(--ink-3); font-size: 13px; }
+  .pay-client-row { transition: background .15s; }
+  .pay-client-row:hover { background: var(--sand); }
 </style>
 <!-- ─── [إضافة جديدة] لوحة تقارير تفاعلية — Reports Command Deck ─── -->
 <style id="reports-dashboard-style">
@@ -9229,13 +9231,13 @@ window.renderSettlement = function() {
     const open   = settleOpenClient === name;
     const rows   = list.map(c => settleContractRowHtml(c)).join('');
     return `
-    <div style="border-bottom:1px solid var(--border);">
+    <div class="pay-client-row" style="border-bottom:1px solid var(--border);">
       <div onclick="toggleSettleClient('${escJs(name)}')" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;">
         <span class="pay-toggle-ico${open ? ' open' : ''}">▸</span>
         <span style="font-size:13.5px;font-weight:600;color:var(--ink);">${esc(name)}</span>
         <span style="margin-right:auto;display:flex;align-items:center;gap:12px;">
-          <span style="font-size:12px;color:var(--ink-3);">${list.length} عقد · مدين: ${payFmt(remSum)} ر</span>
-          <button class="btn-sm btn-primary" onclick="event.stopPropagation();openDistributeModal('${escJs(name)}')" style="font-size:12px;padding:5px 14px;">💳 سداد</button>
+          <span style="font-size:12px;color:var(--ink-3);">${list.length} عقد · مدين: <span style="font-weight:600;color:var(--amber);">${payFmt(remSum)} ر</span></span>
+          <button class="btn-sm btn-primary" onclick="event.stopPropagation();openDistributeModal('${escJs(name)}')" style="font-size:12px;padding:6px 16px;border-radius:calc(var(--radius) - 4px);">تسديد</button>
         </span>
       </div>
       <div style="display:${open ? 'block' : 'none'};padding:0 18px 14px;">${rows}</div>
@@ -9511,13 +9513,13 @@ window.renderClientBalances = function() {
     const credit = clientBalances[name] || 0;
     const open = balanceOpenClient === name;
     return `
-    <div style="border-bottom:1px solid var(--border);">
+    <div class="pay-client-row" style="border-bottom:1px solid var(--border);">
       <div onclick="toggleClientBalance('${escJs(name)}')" style="display:flex;align-items:center;gap:10px;padding:14px 18px;cursor:pointer;flex-wrap:wrap;">
         <span class="pay-toggle-ico${open ? ' open' : ''}">▸</span>
         <span style="font-size:13.5px;font-weight:600;color:var(--ink);">${esc(name)}</span>
         <span style="margin-right:auto;display:flex;gap:14px;font-size:12px;color:var(--ink-3);">
           <span>عدد العقود: ${cs.length}</span>
-          <span>مدين: ${payFmt(totalRemaining)} ر</span>
+          <span>مدين: <span style="font-weight:600;color:var(--amber);">${payFmt(totalRemaining)} ر</span></span>
           ${credit > 0 ? `<span style="color:var(--green-dark);font-weight:600;">دائن: ${payFmt(credit)} ر</span>` : ''}
         </span>
       </div>
