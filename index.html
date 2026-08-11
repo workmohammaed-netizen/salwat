@@ -2578,6 +2578,41 @@
         </div>
       </div>
 
+      <!-- ═══ قسم المرفقات (PDF) ═══ -->
+      <div style="margin-top:20px;border-top:2px solid var(--border);padding-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:14px;font-weight:600;color:#0C447C;display:flex;align-items:center;gap:6px;">📎 المرفقات (PDF)</div>
+          <button class="btn-sm det-edit-only" id="file-toggle-btn" onclick="toggleFileUploadForm()" style="background:#0C447C;border-color:#0C447C;color:#fff;font-weight:500;font-size:12px;">+ رفع ملف</button>
+        </div>
+
+        <!-- قائمة الملفات المرفوعة -->
+        <div id="detail-files-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <div id="detail-no-files" style="text-align:center;padding:14px;color:var(--ink-3);font-size:12px;">لا توجد ملفات مرفوعة على هذا العقد</div>
+        </div>
+
+        <!-- نموذج رفع ملف (مخفي افتراضياً — يظهر بالضغط على "+ رفع ملف" ويختفي بعد الحفظ) -->
+        <div id="file-upload-form-wrap" class="det-edit-only" style="display:none;background:#EEF3F8;border:1px solid #C8D9E8;border-radius:12px;padding:16px;">
+          <div style="font-size:13px;font-weight:600;color:#0C447C;margin-bottom:14px;">رفع ملف PDF جديد</div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">الملف (PDF) <span>*</span></label>
+            <input class="form-input" id="file-upload-input" type="file" accept="application/pdf" style="padding:8px;">
+          </div>
+
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">ملاحظة</label>
+            <input class="form-input" id="file-upload-note" type="text" placeholder="اختياري">
+          </div>
+
+          <div id="file-upload-error" style="font-size:12px;color:var(--red);margin-bottom:8px;min-height:14px;"></div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn-sm" onclick="toggleFileUploadForm()">إلغاء</button>
+            <button class="btn-sm btn-primary" id="file-upload-save-btn" onclick="saveContractFile()">✓ حفظ</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -3743,7 +3778,7 @@ async function importFromWorkbook(wb) {
   }
 
   let dbStats = { clients:0, hotels:0, axes:0, carriers:0, statuses:0, discounts:0 };
-  let contractStats = { added:0, skipped:0 };
+  let contractStats = { added:0, updated:0, skipped:0 };
   let importError = null;
   try {
     if (dbSheetName) {
@@ -3780,10 +3815,10 @@ async function importFromWorkbook(wb) {
   }
 
   addAuditEntry(currentUser.name||'النظام', 'إضافة', '—', '—',
-    `استيراد إكسل: ${contractStats.added} عقد جديد · ${dbStats.clients} عميل جديد · ${dbStats.hotels} فندق جديد · ${dbStats.axes} محور جديد · ${dbStats.carriers} ناقل جديد`,
+    `استيراد إكسل: ${contractStats.added} عقد جديد · ${contractStats.updated} عقد محدَّث · ${dbStats.clients} عميل جديد · ${dbStats.hotels} فندق جديد · ${dbStats.axes} محور جديد · ${dbStats.carriers} ناقل جديد`,
     contractStats.skipped ? `تم تجاهل ${contractStats.skipped} صف بدون عميل/فندق أو بدون تواريخ صحيحة` : '');
 
-  showToast(`✓ تم الاستيراد — ${contractStats.added} عقد، ${dbStats.clients} عميل جديد، ${dbStats.hotels} فندق جديد`);
+  showToast(`✓ تم الاستيراد — ${contractStats.added} عقد جديد، ${contractStats.updated} عقد محدَّث، ${dbStats.clients} عميل جديد، ${dbStats.hotels} فندق جديد`);
 }
 
 // ورقة "قاعدة البيانات": المحاور + أسباب الخصم + حالات التعاقد + العملاء/الفنادق + الناقلين
@@ -3928,8 +3963,18 @@ async function ensureClientHotelLinked(clientName, hotelName, axis, point) {
 // ملاحظة مهمّة: السعر ورسوم المحطة بالملف الأصلي مبلغ إجمالي لكل الحافلات وليس لكل حافلة،
 // لذا نقسمهما على عدد الحافلات حتى تبقى معادلة الموقع (أيام × حافلات × سعر) صحيحة عند أي تعديل لاحق
 async function importContractsSheet(rows) {
-  const stats = { added:0, skipped:0 };
+  const stats = { added:0, updated:0, skipped:0 };
   const dataRows = rows.slice(2); // أول صفين عناوين
+
+  // فهارس مطابقة للعقود الموجودة مسبقاً — تُستخدم لمنع تكرار الاستيراد (تحديث بدل إضافة نسخة جديدة).
+  // مفتاح 1 (الأدق): رقم أمر الإيجار + اسم الفندق. مفتاح 2 (احتياطي): العميل + الفندق + تاريخ البداية + تاريخ النهاية.
+  const byOrderHotel = new Map();
+  const byClientHotelDates = new Map();
+  const regKeys = (c) => {
+    if (c.rentalOrder) byOrderHotel.set(`${c.rentalOrder}||${c.hotel}`, c);
+    byClientHotelDates.set(`${c.client}||${c.hotel}||${c.start}||${c.end}`, c);
+  };
+  contracts.forEach(regKeys);
 
   for (const r of dataRows) {
     const client = normStr(r[4]);
@@ -3966,7 +4011,6 @@ async function importContractsSheet(rows) {
     const rentalRate = rentalRaw; // القيمة الخام من الإكسل مباشرة (كما طلب المستخدم)
     const rentalCost = days * rentalRate; // إجمالي رسوم المحطة = أيام × القيمة الخام (لا يُضرب في عدد الحافلات)
     const total       = totalRaw || (days * buses * price + rentalCost);
-    const rem         = (r[28] !== '' && r[28] !== undefined) ? Math.max(0, normNum(r[28])) : total;
 
     await ensureClientHotelLinked(client, hotel, axis, point);
 
@@ -3974,6 +4018,45 @@ async function importContractsSheet(rows) {
     const hotelObj = db.hotels.find(x => x.name === hotel);
     const axisObj = db.axes.find(x => x.name === axis);
     const carrierObj = db.carriers.find(x => x.name === carrier);
+
+    // ابحث عن عقد موجود مسبقاً يطابق هذا الصف — عبر رقم أمر الإيجار أولاً، ثم العميل+الفندق+التواريخ
+    const matched = (rentalOrder && byOrderHotel.get(`${rentalOrder}||${hotel}`))
+      || byClientHotelDates.get(`${client}||${hotel}||${startStr}||${endStr}`)
+      || null;
+
+    if (matched) {
+      // ── عقد موجود مسبقاً: نحدّث حالته حسب الإكسل بدل إضافة نسخة مكرّرة ──
+      const paidSoFar = Math.max(0, (matched.originalTotal || matched.total || 0) - (matched.rem || 0));
+      const rem = (r[28] !== '' && r[28] !== undefined) ? Math.max(0, normNum(r[28])) : Math.max(0, total - paidSoFar);
+
+      const { error: updErr } = await supabaseClient.from('contracts').update({
+        client_id: clientObj ? clientObj.id : null, hotel_id: hotelObj ? hotelObj.id : null,
+        axis_id: axisObj ? axisObj.id : null, point, carrier_id: carrierObj ? carrierObj.id : null,
+        rental_order: rentalOrder, buses,
+        start_date: dmyToISO(startStr), end_date: dmyToISO(endStr),
+        rental_rate: rentalRate, rental_cost: rentalCost, days, price, total, original_total: total, remaining: rem,
+      }).eq('id', matched.id);
+      if (updErr) { stats.skipped++; continue; }
+
+      Object.assign(matched, {
+        hotel, client, axis, point, carrier, rentalOrder, buses,
+        start: startStr, end: endStr,
+        rental: rentalRate, rentalCost, days, price, total, originalTotal: total, rem,
+      });
+      if (typeof computeContractStatus === 'function') matched.status = computeContractStatus(matched);
+      regKeys(matched);
+
+      const notesTxt = normStr(r[3]);
+      addAuditEntry(currentUser.name||'النظام', 'تعديل', matched.id, hotel,
+        `تحديث عقد عبر الاستيراد: ${hotel} · ${axis} · ${buses} حافلة · ${total.toLocaleString()} ريال`,
+        `تم تحديث بيانات العقد من ملف إكسل بدون تكرار (المسدد محفوظ: ${paidSoFar.toLocaleString()} ريال)${notesTxt ? ' · ملاحظة: '+notesTxt : ''}`);
+
+      stats.updated++;
+      continue;
+    }
+
+    // ── لا يوجد عقد مطابق: نضيف عقداً جديداً كالمعتاد ──
+    const rem = (r[28] !== '' && r[28] !== undefined) ? Math.max(0, normNum(r[28])) : total;
 
     const { data: row, error: rowErr } = await supabaseClient.from('contracts').insert({
       client_id: clientObj ? clientObj.id : null, hotel_id: hotelObj ? hotelObj.id : null,
@@ -3988,13 +4071,15 @@ async function importContractsSheet(rows) {
     const newId = row.id;
 
     const createdAt = new Date().toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'});
-    contracts.push({
+    const newContractObj = {
       id: newId, hotel, client, axis, point, carrier, rentalOrder, buses, createdAt,
       start: startStr, end: endStr,
       startShift:'وردية كاملة', endShift:'وردية كاملة', shift:'كاملة',
       rental: rentalRate, rentalCost, days, price, total, originalTotal: total, rem,
       status: '', distributedPayment:false, parentId: null,
-    });
+    };
+    contracts.push(newContractObj);
+    regKeys(newContractObj);
 
     // لو المصدر فيه أعمدة "دفعة 1..4" مذكورة صراحةً، نسجّل كل واحدة منها كدفعة مستقلة في سجل الدفعات
     // (هذا يعكس دفعات حقيقية متعددة بدل تجميعها في دفعة واحدة)
@@ -6215,6 +6300,144 @@ window.clearAuditFilter = function() {
 /* ══ DISCOUNTS LOG ══ */
 const discountsLog = [];
 
+/* ── مرفقات العقود (ملفات PDF) ── */
+const contractFilesLog = []; // { fid, contractId, fileName, fileUrl, note, uploadedBy, uploadedAt }
+window.contractFilesLog = contractFilesLog;
+
+async function loadContractFiles() {
+  const { data, error } = await supabaseClient.from('contract_files').select('*').order('id', { ascending: false });
+  if (error) return; // الجدول قد لا يكون مُنشأً بعد على قاعدة البيانات — نتجاهل بصمت
+  contractFilesLog.length = 0;
+  (data||[]).forEach(row => contractFilesLog.push({
+    fid: row.id, contractId: row.contract_id, fileName: row.file_name, fileUrl: row.file_url,
+    note: row.note || '', uploadedBy: row.uploaded_by || '',
+    uploadedAt: row.uploaded_at ? new Date(row.uploaded_at).toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'}) : '',
+  }));
+}
+
+window.toggleFileUploadForm = function() {
+  const wrap = document.getElementById('file-upload-form-wrap');
+  const btn  = document.getElementById('file-toggle-btn');
+  if (!wrap) return;
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  if (btn) btn.textContent = open ? '✕ إلغاء' : '+ رفع ملف';
+  if (open) {
+    const inp = document.getElementById('file-upload-input');
+    const note = document.getElementById('file-upload-note');
+    const err = document.getElementById('file-upload-error');
+    if (inp) inp.value = '';
+    if (note) note.value = '';
+    if (err) err.textContent = '';
+  }
+};
+
+let fileUploadInProgress = false;
+window.saveContractFile = async function() {
+  if (fileUploadInProgress) return;
+  const c = contracts.find(x => x.id === activeContractId);
+  const inp = document.getElementById('file-upload-input');
+  const noteEl = document.getElementById('file-upload-note');
+  const errEl = document.getElementById('file-upload-error');
+  if (errEl) errEl.textContent = '';
+  if (!c) return;
+
+  const file = inp && inp.files && inp.files[0];
+  if (!file) { if (errEl) errEl.textContent = '⚠ اختر ملف PDF أولاً'; return; }
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    if (errEl) errEl.textContent = '⚠ الملف يجب أن يكون بصيغة PDF';
+    return;
+  }
+  const MAX_FILE_MB = 20;
+  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+    if (errEl) errEl.textContent = `⚠ حجم الملف كبير جداً (الحد الأقصى ${MAX_FILE_MB} م.ب)`;
+    return;
+  }
+
+  fileUploadInProgress = true;
+  const btn = document.getElementById('file-upload-save-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; btn.textContent = 'جاري الرفع...'; }
+
+  try {
+    const safeName = file.name.replace(/[^\w.\-ء-ي\s]/g, '_');
+    const storagePath = `contract-${c.id}/${Date.now()}_${safeName}`;
+    const { error: upErr } = await supabaseClient.storage.from('contract-files').upload(storagePath, file, { upsert: false });
+    if (upErr) { if (errEl) errEl.textContent = 'تعذّر رفع الملف: ' + upErr.message; return; }
+
+    const { data: pub } = supabaseClient.storage.from('contract-files').getPublicUrl(storagePath);
+    const fileUrl = pub ? pub.publicUrl : '';
+    const note = noteEl ? noteEl.value.trim() : '';
+
+    const { data: row, error: rowErr } = await supabaseClient.from('contract_files').insert({
+      contract_id: c.id, file_name: file.name, file_url: fileUrl, note,
+      uploaded_by: currentUser.name || 'النظام',
+    }).select().single();
+    if (rowErr) { if (errEl) errEl.textContent = 'تعذّر حفظ بيانات الملف: ' + rowErr.message; return; }
+
+    contractFilesLog.unshift({
+      fid: row.id, contractId: c.id, fileName: file.name, fileUrl, note,
+      uploadedBy: currentUser.name || 'النظام',
+      uploadedAt: new Date().toLocaleDateString('ar-SA',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    });
+
+    addAuditEntry(currentUser.name||'النظام','رفع ملف',c.id,c.hotel, `تم رفع ملف "${file.name}" على العقد`, note);
+
+    window.toggleFileUploadForm();
+    renderDetailFiles(c.id);
+    showToast('✓ تم رفع الملف بنجاح');
+  } finally {
+    fileUploadInProgress = false;
+    const b = document.getElementById('file-upload-save-btn');
+    if (b) { b.disabled = false; b.style.opacity = ''; b.style.cursor = ''; b.textContent = '✓ حفظ'; }
+  }
+};
+
+window.deleteContractFile = function(fid) {
+  const f = contractFilesLog.find(x => x.fid === fid);
+  if (!f) return;
+  document.getElementById('confirm-msg').textContent = `هل تريد حذف الملف "${f.fileName}"؟`;
+  pendingDeleteFn = async () => {
+    const { error } = await supabaseClient.from('contract_files').delete().eq('id', fid);
+    if (error) { showToast('تعذّر حذف الملف: ' + error.message); return; }
+    const idx = contractFilesLog.findIndex(x => x.fid === fid);
+    if (idx !== -1) contractFilesLog.splice(idx, 1);
+    const c = contracts.find(x => x.id === f.contractId);
+    addAuditEntry(currentUser.name||'النظام','حذف ملف',f.contractId,c?c.hotel:'—', `حُذف ملف "${f.fileName}"`, '');
+    renderDetailFiles(f.contractId);
+    showToast('🗑 تم حذف الملف');
+  };
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+};
+
+function renderDetailFiles(id) {
+  const list = contractFilesLog.filter(f => f.contractId === id);
+  const el   = document.getElementById('detail-files-list');
+  const none = document.getElementById('detail-no-files');
+  if (!el) return;
+  if (!list.length) {
+    if (none) none.style.display = 'block';
+    el.innerHTML = '';
+    if (none) el.appendChild(none);
+    return;
+  }
+  if (none) none.style.display = 'none';
+  el.innerHTML = list.map(f => `
+    <div style="padding:10px 12px;background:#EEF3F8;border:1px solid #C8D9E8;border-radius:8px;display:flex;align-items:flex-start;gap:10px;">
+      <div style="width:30px;height:30px;background:#C8D9E8;border-radius:7px;
+        display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px;">📄</div>
+      <div style="flex:1;min-width:0;">
+        <a href="${esc(f.fileUrl)}" target="_blank" rel="noopener" style="font-size:13px;font-weight:600;color:#0C447C;text-decoration:none;word-break:break-all;">${esc(f.fileName)}</a>
+        <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#0C447C;">📅 ${esc(f.uploadedAt)}</span>
+          <span style="font-size:11px;color:var(--ink-3);">رفعه: <strong style="color:var(--ink-2);">${esc(f.uploadedBy)}</strong></span>
+          ${f.note?`<span style="font-size:11px;color:var(--ink-3);">📝 ${esc(f.note)}</span>`:''}
+        </div>
+      </div>
+      <button class="del-btn det-edit-only" onclick="deleteContractFile(${f.fid})" style="flex-shrink:0;margin-top:1px;">حذف</button>
+    </div>`).join('');
+}
+
 const AUTO_HALF_DAY_REASONS = ['بداية في الوردية المسائية', 'نهاية في الوردية الصباحية'];
 
 window.onDiscReasonChange = function() {
@@ -6448,6 +6671,12 @@ window.openContractDetail = function(id, readOnly) {
   const dtb = document.getElementById('disc-toggle-btn');
   if (dfw) dfw.style.display = 'none';
   if (dtb) dtb.textContent = '+ إضافة خصم';
+
+  renderDetailFiles(id);
+  const fuw = document.getElementById('file-upload-form-wrap');
+  const ftb = document.getElementById('file-toggle-btn');
+  if (fuw) fuw.style.display = 'none';
+  if (ftb) ftb.textContent = '+ رفع ملف';
 };
 
 /* ── PAYMENT SCHEDULE RENDER ── */
@@ -8140,6 +8369,7 @@ window.loadAllAppData = async function() {
   await loadClientBalances();
   await loadAuditLog();
   await loadManualPayments();
+  await loadContractFiles();
   if (window.loadTasks) await window.loadTasks();
   if (window.setupTaskRealtime) window.setupTaskRealtime();
   if (window.renderAuditLog) renderAuditLog();
