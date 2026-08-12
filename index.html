@@ -183,7 +183,9 @@
 
   /* ── LAYOUT ── */
   .page { display: none; padding: 28px 32px 48px; max-width: 1400px; margin: 0 auto; }
-  .page.active { display: block; }
+  .page.active { display: block; animation: pageFadeIn .2s ease-out; }
+  @keyframes pageFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .page.active { animation: none; } }
 
   /* ── FILTER BAR ── */
   .filter-bar {
@@ -1199,7 +1201,7 @@
 <nav>
   <button class="nav-btn" data-nav="contracts" onclick="showPage('contracts', this)">العقود</button>
   <button class="nav-btn" data-nav="operations" onclick="showPage('operations', this)">التشغيل</button>
-  <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();">الدفعات</button>
+  <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); requestAnimationFrame(()=>{renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();});">الدفعات</button>
   <button class="nav-btn" data-nav="alerts" onclick="showPage('alerts', this)">التنبيهات</button>
   <button class="nav-btn active" data-nav="reports" onclick="showPage('reports', this)">التقارير</button>
   <button class="nav-btn" data-nav="database" onclick="showPage('database', this)">قاعدة البيانات</button>
@@ -1254,6 +1256,7 @@
 
   <div class="card">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--sand);">
+      <input class="form-input" id="filter-search" type="text" placeholder="🔍 ابحث باسم العميل أو الفندق..." oninput="filterContracts()" style="min-width:220px;flex:1;max-width:280px;">
       <span class="filter-label">المحور:</span>
       <select class="filter-select" id="filter-axis" onchange="filterContracts()">
         <option value="">الكل</option>
@@ -2137,6 +2140,9 @@
           <tbody id="audit-tbody"></tbody>
         </table>
       </div>
+      <div style="text-align:center;padding:14px;display:none;" id="audit-loadmore-wrap">
+        <button class="btn-sm" id="audit-loadmore-btn" onclick="loadMoreAuditLog()">تحميل المزيد ▾</button>
+      </div>
       <div id="audit-empty" style="display:none;text-align:center;padding:48px;color:var(--ink-3);">
         <div style="font-size:32px;margin-bottom:12px;">📋</div>
         <div style="font-size:14px;font-weight:500;color:var(--ink-2);">لا توجد سجلات بعد</div>
@@ -2640,6 +2646,7 @@
         </div>
         <div class="form-group full">
           <label class="form-label">الفندق / الفنادق <span>*</span></label>
+          <input class="form-input" id="f-hotel-search" type="text" placeholder="🔍 ابحث باسم الفندق..." oninput="populateHotelDropdown()" style="margin-bottom:8px;">
           <div id="f-hotel-list" style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;max-height:180px;overflow-y:auto;background:var(--white);min-height:42px;"></div>
         </div>
         <div class="form-group">
@@ -3670,10 +3677,12 @@ window.filterContracts = function() {
   const axis    = document.getElementById('filter-axis').value;
   const carrier = document.getElementById('filter-carrier').value;
   const status  = document.getElementById('filter-status').value;
+  const search  = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
   const filtered = contracts.filter(c =>
     (!axis    || c.axis === axis) &&
     (!carrier || c.carrier === carrier) &&
-    (!status  || c.status.includes(status))
+    (!status  || c.status.includes(status)) &&
+    (!search  || (c.client||'').toLowerCase().includes(search) || (c.hotel||'').toLowerCase().includes(search))
   );
   contractsCurrentPage = 1;
   renderContracts(filtered);
@@ -3684,10 +3693,12 @@ window.exportContracts = function(type) {
   const axis    = document.getElementById('filter-axis').value;
   const carrier = document.getElementById('filter-carrier').value;
   const status  = document.getElementById('filter-status').value;
+  const search  = (document.getElementById('filter-search')?.value || '').trim().toLowerCase();
   const data = contracts.filter(c =>
     (!axis    || c.axis === axis) &&
     (!carrier || c.carrier === carrier) &&
-    (!status  || (c.status||'').includes(status))
+    (!status  || (c.status||'').includes(status)) &&
+    (!search  || (c.client||'').toLowerCase().includes(search) || (c.hotel||'').toLowerCase().includes(search))
   );
   const columns = ['#','العميل','الفندق','المحور','نقطة الفرز','الناقل','أمر الإيجار','الحافلات','تاريخ الإنشاء','البداية','النهاية','الأيام','سعر التشغيل','رسوم المحطة','الإجمالي','المسدد','المتبقي','الحالة'];
   const rows = data.map(c => [
@@ -4179,6 +4190,7 @@ window.populateHotelDropdown = function() {
   const hotelList = document.getElementById('f-hotel-list');
   const hotelHint = document.getElementById('f-hotel-hint');
   const clientSel = document.getElementById('f-client');
+  const searchEl  = document.getElementById('f-hotel-search');
   if (!hotelList) return;
 
   let available = [];
@@ -4189,8 +4201,14 @@ window.populateHotelDropdown = function() {
     }
   }
 
+  const search = (searchEl?.value || '').trim().toLowerCase();
+  if (search) available = available.filter(h => h.name.toLowerCase().includes(search));
+
+  // نحافظ على تحديد الفنادق اللي كانت مختارة قبل الكتابة بالبحث، عشان البحث ما يفرّغ الاختيار
+  const prevChecked = new Set([...hotelList.querySelectorAll('.hotel-cb:checked')].map(cb => cb.value));
+
   if (!available.length) {
-    hotelList.innerHTML = '<div style="color:var(--ink-3);font-size:12px;padding:4px 0;">لا توجد فنادق مرتبطة بهذا العميل</div>';
+    hotelList.innerHTML = `<div style="color:var(--ink-3);font-size:12px;padding:4px 0;">${search ? 'لا يوجد فندق مطابق للبحث' : 'لا توجد فنادق مرتبطة بهذا العميل'}</div>`;
     if (hotelHint) hotelHint.textContent = 'أضف فنادق للعميل من قاعدة البيانات';
     return;
   }
@@ -4206,7 +4224,7 @@ window.populateHotelDropdown = function() {
     const label = dup ? `${esc(h.name)} (${esc(h.location)})` : esc(h.name);
     const isParentHotel = parent && h.name === parent.hotel;
     const disabled = parent ? (isParentHotel ? '' : 'disabled') : '';
-    const checked  = parent ? (isParentHotel ? 'checked' : '') : '';
+    const checked  = parent ? (isParentHotel ? 'checked' : '') : (prevChecked.has(h.name) ? 'checked' : '');
     return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:${disabled?'default':'pointer'};${disabled?'opacity:0.35;':''}">
       <input type="checkbox" class="hotel-cb" value="${esc(h.name)}" data-hid="${h.id}" ${checked} ${disabled} onchange="onHotelCheckChange()">
       <span style="font-size:13px;">${label}</span>
@@ -4215,6 +4233,8 @@ window.populateHotelDropdown = function() {
 };
 
 window.onClientChange = function() {
+  const searchEl = document.getElementById('f-hotel-search');
+  if (searchEl) searchEl.value = '';
   populateHotelDropdown();
   ['f-location','f-axis','f-carrier'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   onAxisChange();
@@ -4517,7 +4537,7 @@ window.highlight = function(id) {
 }
 
 window.resetForm = function() {
-  ['f-client','f-location','f-start','f-end','f-notes','f-rentalorder'].forEach(id => {
+  ['f-client','f-location','f-start','f-end','f-notes','f-rentalorder','f-hotel-search'].forEach(id => {
     const el = document.getElementById(id); if (el) { el.value = ''; el.disabled = false; }
   });
   const hotelList = document.getElementById('f-hotel-list');
@@ -6182,7 +6202,8 @@ window.renderReports = function() {
 const _origShowPage = window.showPage;
 window.showPage = function(id, btn) {
   _origShowPage(id, btn);
-  if (id === 'reports') window.renderReports();
+  // نؤجل الرسم الثقيل لبعد أول رسمة (paint) عشان يظهر تبديل الصفحة/الحركة فورًا بدل ما يتجمّد لحظة
+  if (id === 'reports') requestAnimationFrame(() => window.renderReports());
 };
 
 /* ══════════════════════════════
@@ -6190,6 +6211,11 @@ window.showPage = function(id, btn) {
 ══════════════════════════════ */
 const auditLog = []; // {id, ts, user, type, contractId, hotel, details, note}
 let auditNextId = 1;
+const AUDIT_PAGE_SIZE = 200; // تحميل تدريجي بدل جلب كل السجل دفعة وحدة (يكبر بلا حد مع الوقت)
+let auditOffset = 0;
+let auditHasMore = true;
+let auditTotalCount = 0;
+let auditLoadedOnce = false;
 
 function nowStr() {
   return new Date().toLocaleString('ar-SA', {
@@ -6223,18 +6249,44 @@ function addAuditEntry(user, type, contractId, hotel, details, note) {
   }).then(({ error }) => { if (error) console.warn('audit_log insert failed:', error.message); });
 }
 
+// يجلب فقط أحدث دفعة من السجل (لا يحمّل الجدول كامل) — يُستدعى مرة واحدة عند فتح صفحة السجل لأول مرة
 async function loadAuditLog() {
-  const { data, error } = await supabaseClient.from('audit_log').select('*').order('id', { ascending: false });
-  if (error) return;
   auditLog.length = 0;
+  auditOffset = 0;
+  auditHasMore = true;
+  const { count } = await supabaseClient.from('audit_log').select('id', { count: 'exact', head: true });
+  auditTotalCount = count || 0;
+  await fetchAuditLogPage();
+  auditLoadedOnce = true;
+}
+
+async function fetchAuditLogPage() {
+  const { data, error } = await supabaseClient.from('audit_log').select('*')
+    .order('id', { ascending: false })
+    .range(auditOffset, auditOffset + AUDIT_PAGE_SIZE - 1);
+  if (error) return;
   (data||[]).forEach(row => auditLog.push({
     id: row.id,
     ts: row.occurred_at ? new Date(row.occurred_at).toLocaleString('ar-SA', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }) : '',
     user: row.user_name || 'غير محدد',
     type: row.action_type, contractId: row.contract_id, hotel: row.hotel, details: row.details, note: row.note || '',
   }));
+  auditOffset += (data||[]).length;
+  auditHasMore = (data||[]).length === AUDIT_PAGE_SIZE;
   auditNextId = auditLog.length ? Math.max(...auditLog.map(e => e.id)) + 1 : 1;
 }
+
+let auditLoadMoreInFlight = false;
+window.loadMoreAuditLog = async function() {
+  if (auditLoadMoreInFlight || !auditHasMore) return;
+  auditLoadMoreInFlight = true;
+  const btn = document.getElementById('audit-loadmore-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '...جارٍ التحميل'; }
+  await fetchAuditLogPage();
+  if (btn) { btn.disabled = false; btn.textContent = 'تحميل المزيد ▾'; }
+  auditLoadMoreInFlight = false;
+  window.renderAuditLog();
+};
 
 const auditTypeBadge = {
   'تعديل': 'badge-amber',
@@ -6255,7 +6307,7 @@ window.renderAuditLog = function() {
   if (kpiEl) {
     const byType = t => auditLog.filter(e => e.type === t).length;
     kpiEl.innerHTML =
-      `<div class="kpi-card"><div class="kpi-label">إجمالي السجلات</div><div class="kpi-value">${auditLog.length}</div></div>` +
+      `<div class="kpi-card"><div class="kpi-label">إجمالي السجلات</div><div class="kpi-value">${auditTotalCount}</div></div>` +
       `<div class="kpi-card warn"><div class="kpi-label">تعديلات</div><div class="kpi-value">${byType('تعديل')}</div></div>` +
       `<div class="kpi-card"><div class="kpi-label">إضافات</div><div class="kpi-value">${byType('إضافة')}</div></div>` +
       `<div class="kpi-card alert"><div class="kpi-label">حذف</div><div class="kpi-value">${byType('حذف')}</div></div>`;
@@ -6266,6 +6318,8 @@ window.renderAuditLog = function() {
 
   const tbody = document.getElementById('audit-tbody');
   const empty = document.getElementById('audit-empty');
+  const loadMoreWrap = document.getElementById('audit-loadmore-wrap');
+  if (loadMoreWrap) loadMoreWrap.style.display = auditHasMore ? 'block' : 'none';
   if (!filtered.length) {
     if (tbody) tbody.innerHTML = '';
     if (empty) empty.style.display = 'block';
@@ -7651,11 +7705,18 @@ window.toggleTodayDetails = function(prefix) {
   if (hint) hint.textContent = isOpen ? 'اضغط لعرض التفاصيل ▾' : 'اضغط لإخفاء التفاصيل ▴';
 };
 
-// refresh audit log on open (today card is refreshed via renderReports() when the reports page opens)
+// سجل التعديلات: يُحمَّل أول مرة فقط عند فتح الصفحة فعليًا (تحميل كسول)، وبعدها يُعاد رسمه من الذاكرة مباشرة
+// (today card is refreshed via renderReports() when the reports page opens)
 const _spOrig3 = window.showPage;
 window.showPage = function(id, btn) {
   _spOrig3(id, btn);
-  if (id === 'auditlog')  window.renderAuditLog();
+  if (id === 'auditlog') {
+    if (!auditLoadedOnce) {
+      loadAuditLog().then(() => window.renderAuditLog());
+    } else {
+      requestAnimationFrame(() => window.renderAuditLog());
+    }
+  }
 };
 
 // refresh today card whenever contracts change
@@ -8367,12 +8428,12 @@ window.loadAllAppData = async function() {
   await loadContracts();
   await loadFinancials();
   await loadClientBalances();
-  await loadAuditLog();
+  // سجل التعديلات لا يُحمَّل هنا — يكبر بلا حد مع الوقت ويصير أثقل جدول بالموقع؛
+  // يُحمَّل فقط أول مرة يفتح فيها المستخدم صفحته فعليًا (انظر window.showPage أدناه)
   await loadManualPayments();
   await loadContractFiles();
   if (window.loadTasks) await window.loadTasks();
   if (window.setupTaskRealtime) window.setupTaskRealtime();
-  if (window.renderAuditLog) renderAuditLog();
   if (window.filterContracts) filterContracts();
   if (window.renderReports) renderReports();
   if (window.renderOperations) renderOperations();
@@ -10479,10 +10540,12 @@ window.exportOperations = function(type) {
 const _spOrigOps = window.showPage;
 window.showPage = function(id, btn) {
   _spOrigOps(id, btn);
-  if (id === 'operations') renderOperations();
-  if (id === 'users') renderUsers();
-  if (id === 'alerts') { renderAlerts(); if (window.renderMyPendingTasks) window.renderMyPendingTasks(); }
-  if (id === 'tasks' && window.renderTasksPage) window.renderTasksPage();
+  requestAnimationFrame(() => {
+    if (id === 'operations') renderOperations();
+    if (id === 'users') renderUsers();
+    if (id === 'alerts') { renderAlerts(); if (window.renderMyPendingTasks) window.renderMyPendingTasks(); }
+    if (id === 'tasks' && window.renderTasksPage) window.renderTasksPage();
+  });
 };
 
 /* ═══════════════════════════════════════════════════════════════
