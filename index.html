@@ -555,7 +555,7 @@
     vertical-align: middle;
     transition: background .12s;
   }
-  tbody tr:nth-child(even) td { background: oklch(98% .006 70); }
+  tbody tr:nth-child(even) td { background: oklch(32% .03 65); }
   tr:hover td { background: var(--gold-light); }
   tr:last-child td { border-bottom: none; }
 
@@ -1171,9 +1171,10 @@
   /* overflow-anchor:none يمنع المتصفح من "تعويض" التمرير تلقائياً لما تتغيّر
      أحجام العناصر (حلقات النِسَب المتحركة، لوحات التفصيل...) — هذا هو سبب
      نزول السكرول المفاجئ عند الضغط على بطاقات المعلومات */
-  #page-reports {
-    overflow-anchor: none;
-    /* نفس درجات الوضع الداكن الرسمية بتصميم الموقع الجديد (oklch) */
+  /* الوضع الداكن — كان مقتصرًا على صفحة التقارير فقط، الآن مطبّق على الموقع كامل.
+     يعيد تعريف نفس متغيرات الألوان الأساسية (oklch) على مستوى body، فتنعكس تلقائيًا
+     على كل مكوّن يستخدمها (بطاقات، جداول، مودالات، نماذج) بدون لمس كل عنصر يدويًا. */
+  body {
     --white:       oklch(22% .008 40);
     --sand:        oklch(26% .008 40);
     --ink:         oklch(96% .01 75);
@@ -1187,6 +1188,30 @@
     --gold-light:  oklch(68% .075 65 / .22);
     --amber-light: oklch(75% .13 65 / .18);
     --red-light:   oklch(55% .19 25 / .18);
+  }
+  /* الهيدر والشريط الجانبي يستخدمان --green-dark/--white بمعنى مختلف (لون خلفية العلامة
+     التجارية الغامق أصلاً) — نعيدهما لقيمتيهما الأصليتين هنا فقط، بمعزل عن الوضع الداكن أعلاه */
+  header, nav, #sidebar-toggle {
+    --green-dark: oklch(28% .008 40);
+    --white: #FFFFFF;
+  }
+  /* شاشة تسجيل الدخول/إنشاء الحساب تبقى بشكلها الفاتح الأصلي كما هي — أول شاشة يشوفها أي
+     مستخدم قبل الدخول، منفصلة تمامًا عن "صفحات" الموقع الداخلية اللي يخصّها الوضع الداكن */
+  #auth-screen {
+    --white: #FFFFFF;
+    --sand: oklch(98% .008 70);
+    --ink: oklch(22% .01 40);
+    --ink-2: oklch(38% .012 45);
+    --ink-3: oklch(50% .015 55);
+    --border: oklch(90% .015 70);
+    --green-dark: oklch(28% .008 40);
+    --green-light: oklch(92% .028 75);
+    --gold-light: oklch(92% .028 75);
+    --amber-light: oklch(94% .035 60);
+    --red-light: oklch(93% .04 25);
+  }
+  #page-reports {
+    overflow-anchor: none;
     background: linear-gradient(165deg, oklch(16% .008 40) 0%, oklch(20% .008 40) 45%, oklch(24% .008 40) 100%);
     border-radius: 0;
     box-shadow: none;
@@ -1200,18 +1225,20 @@
     #page-reports { margin-right: 190px; width: auto; }
   }
   #page-reports .rpt-shell { box-shadow:none; }
-  #page-reports tr:hover td { background: rgba(255,255,255,.045); }
-  #page-reports .badge-green { background: rgba(184,144,100,.22); color:#E7D2AE; }
-  #page-reports .badge-amber { background: rgba(240,182,92,.2);  color:#F3C57E; }
-  #page-reports .badge-red   { background: rgba(227,103,103,.2); color:#F0A3A3; }
-  #page-reports .badge-gray  { background: rgba(255,255,255,.1); color:#CFC7B8; }
-  #page-reports .badge-blue  { background: rgba(140,180,220,.22);color:#B7D6F0; }
-  #page-reports .db-tab { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: rgba(255,255,255,.65); }
-  #page-reports .db-tab:hover { background: rgba(255,255,255,.11); }
-  #page-reports .db-tab.active { background: var(--gold); color:#3A2800; border-color: var(--gold); font-weight:600; }
-  #page-reports .rpt-race-fill { background: linear-gradient(90deg, #6B5636, var(--gold)); color:#3A2800; }
-  #page-reports .btn-sm:not(.export-xls):not(.export-pdf) { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.75); }
-  #page-reports .btn-sm:not(.export-xls):not(.export-pdf):hover { background: rgba(255,255,255,.12); }
+  tr:hover td { background: rgba(255,255,255,.045); }
+  .badge-green { background: rgba(184,144,100,.22); color:#E7D2AE; }
+  .badge-amber { background: rgba(240,182,92,.2);  color:#F3C57E; }
+  .badge-red   { background: rgba(227,103,103,.2); color:#F0A3A3; }
+  .badge-gray  { background: rgba(255,255,255,.1); color:#CFC7B8; }
+  .badge-blue  { background: rgba(140,180,220,.22);color:#B7D6F0; }
+  .db-tab { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: rgba(255,255,255,.65); }
+  .db-tab:hover { background: rgba(255,255,255,.11); }
+  .db-tab.active { background: var(--gold); color:#3A2800; border-color: var(--gold); font-weight:600; }
+  .rpt-race-fill { background: linear-gradient(90deg, #6B5636, var(--gold)); color:#3A2800; }
+  .btn-sm:not(.export-xls):not(.export-pdf):not(.btn-primary) { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.75); }
+  .btn-sm:not(.export-xls):not(.export-pdf):not(.btn-primary):hover { background: rgba(255,255,255,.12); }
+  .btn-primary { color: #3A2800; }
+  th { background: rgba(255,255,255,.05); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
