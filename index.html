@@ -122,6 +122,8 @@
     font-weight: 500;
     border-bottom-color: var(--gold);
   }
+  .nav-divider { display: none; }
+  .nav-icon { display: inline-block; position: relative; top: 2px; font-size: 14px; }
 
   /* زر طي/فتح القائمة الجانبية — يظهر فقط على شاشات الكمبيوتر (داخل الميديا كويري بالأسفل) */
   #sidebar-toggle {
@@ -156,7 +158,8 @@
       transition: width .25s ease, padding .25s ease;
     }
     .nav-btn {
-      padding: 11px 14px;
+      padding: 13px 14px;
+      font-size: 13.5px;
       text-align: right;
       border-bottom: none;
       border-right: 3px solid transparent;
@@ -164,14 +167,19 @@
       top: 0;
       width: 100%;
       color: rgba(255,255,255,.62);
+      display: flex; align-items: center; gap: 10px;
+      text-shadow: 0 2px 10px rgba(0,0,0,.35);
+      transition: color .15s, background .15s, transform .15s;
     }
-    .nav-btn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+    .nav-btn:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); transform: translateX(-3px); }
     .nav-btn.active {
       background: rgba(184,144,100,.18);
       color: var(--gold);
+      text-shadow: 0 2px 12px rgba(184,144,100,.5);
       border-bottom-color: transparent;
       border-right-color: var(--gold);
     }
+    .nav-divider { display: block; height: 1px; background: rgba(255,255,255,.12); margin: 10px 6px; }
 
     /* حالة الطي — القائمة تختفي والزر العائم يرجعها */
     body.sidebar-collapsed nav { width: 0; padding-right: 0; padding-left: 0; }
@@ -369,7 +377,93 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
     overflow: hidden;
+    margin-bottom: 20px;
   }
+  /* شبكة بطاقات قاعدة البيانات (عملاء/فنادق/محاور...) بدل جدول صفوف */
+  .db-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .db-card {
+    background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow-card); padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 4px;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .db-card:hover { box-shadow: var(--shadow-elegant); transform: translateY(-1px); }
+  .db-card-id { font-size: 11px; color: var(--ink-3); }
+  .db-card-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .db-card-row { font-size: 12px; color: var(--ink-2); }
+  .db-card-row b { color: var(--ink); font-weight: 500; }
+  .db-card-notes { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+  .db-card-actions { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  .db-cards-empty { grid-column: 1/-1; text-align: center; padding: 24px; color: var(--ink-3); }
+  /* شريط نشاط سجل التعديلات — بدل جدول صفوف */
+  .audit-feed { display: flex; flex-direction: column; }
+  .audit-feed-item { display: flex; gap: 12px; padding: 14px 8px; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .audit-feed-item:last-child { border-bottom: none; }
+  .audit-feed-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+  .audit-feed-main { flex: 1; min-width: 0; }
+  .audit-feed-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .audit-feed-user { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .audit-feed-time { font-size: 11px; color: var(--ink-3); margin-right: auto; white-space: nowrap; }
+  .audit-feed-details { font-size: 12.5px; color: var(--ink-2); }
+  .audit-feed-meta { font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+  /* بطاقات سجل الدفعات — بدل جدول صفوف */
+  .pay-log-list { display: flex; flex-direction: column; gap: 8px; }
+  .pay-log-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--sand); }
+  .pay-log-main { flex: 1; min-width: 0; }
+  .pay-log-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .pay-log-client { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .pay-log-amount { font-size: 14px; font-weight: 700; color: var(--green-dark); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pay-log-sub { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+  .pay-log-note { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-style: italic; }
+  .pay-log-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  /* ── التقارير (تصميم جديد) ── */
+  .rpt2-filterbar-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:14px 18px; }
+  .rpt2-search-wrap { position:relative; }
+  .rpt2-search-icon { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:12px; opacity:.5; pointer-events:none; }
+  .rpt2-search-input { width:200px; padding:7px 30px 7px 10px; border:1px solid var(--border); border-radius:calc(var(--radius) - 4px); font-size:12px; font-family:inherit; }
+  .rpt2-axis-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .rpt2-chip { padding:4px 12px; border-radius:20px; border:1px solid var(--border); background:var(--white); color:var(--ink-3); font-size:11px; cursor:pointer; transition:all .15s; font-family:inherit; }
+  .rpt2-chip.active { border-color:var(--gold); background:var(--gold-light); color:var(--green-dark); font-weight:600; }
+  .rpt2-slider-label { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-3); white-space:nowrap; }
+  .rpt2-slider-label input[type=range] { width:80px; accent-color:var(--gold); }
+  .rpt2-slider-label b { width:32px; text-align:center; color:var(--ink); }
+
+  .rpt2-bar-row { display:block; width:100%; text-align:right; padding:6px 8px; cursor:pointer; border-radius:8px; border:none; background:none; font-family:inherit; }
+  .rpt2-bar-row:hover { background:var(--sand); }
+  .rpt2-bar-row.active .rpt2-bar-label { color:var(--green-dark); font-weight:700; }
+  .rpt2-bar-top { display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:4px; }
+  .rpt2-bar-label { color:var(--ink); font-weight:500; }
+  .rpt2-bar-val { color:var(--ink-3); }
+
+  .rpt2-col-chart { display:flex; align-items:flex-end; gap:6px; height:190px; padding:8px 4px 0; }
+  .rpt2-col-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; height:100%; justify-content:flex-end; }
+  .rpt2-col-bar { width:100%; border-radius:6px 6px 0 0; background:var(--gradient-gold, var(--gold)); min-height:4px; transition:opacity .15s; cursor:pointer; }
+  .rpt2-col-bar:hover { opacity:.75; }
+  .rpt2-col-month { font-size:10px; color:var(--ink-3); }
+  .rpt2-col-tooltip { position:absolute; bottom:100%; margin-bottom:6px; white-space:nowrap; background:var(--green-dark); color:#fff; font-size:10px; padding:4px 8px; border-radius:6px; opacity:0; pointer-events:none; transition:opacity .15s; z-index:5; }
+  .rpt2-col-bar-wrap:hover .rpt2-col-tooltip { opacity:1; }
+
+  .rpt2-contract-card { padding:14px; cursor:pointer; text-align:right; }
+  .rpt2-contract-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .rpt2-contract-client { font-size:13px; font-weight:600; color:var(--ink); }
+  .rpt2-contract-sub { font-size:10.5px; color:var(--ink-3); margin-top:1px; }
+  .rpt2-contract-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-top:10px; }
+  .rpt2-contract-stat { background:var(--sand); border-radius:8px; padding:6px; text-align:center; }
+  .rpt2-contract-stat-label { font-size:9.5px; color:var(--ink-3); }
+  .rpt2-contract-stat-val { font-size:11.5px; font-weight:600; margin-top:1px; }
+
+  .rpt2-axis-block { margin-bottom:16px; }
+  .rpt2-axis-hotels { margin-top:10px; overflow:hidden; border:1px solid var(--gold-light); border-radius:10px; background:oklch(96% .02 75 / .4); }
+  .rpt2-axis-hotels-head { display:flex; justify-content:space-between; padding:8px 14px; background:var(--gold-light); font-size:11.5px; font-weight:600; color:var(--green-dark); }
+
+  .rpt2-day-toggle { display:flex; background:var(--sand); border-radius:10px; padding:3px; gap:2px; }
+  .rpt2-day-btn { padding:6px 16px; border-radius:8px; border:none; cursor:pointer; font-family:inherit; font-size:12px; font-weight:500; background:transparent; color:var(--ink-3); transition:all .15s; }
+  .rpt2-day-btn.active { background:var(--gold); color:#fff; }
+
+  .rpt2-alertbox-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; }
+  .rpt2-alertbox-count { border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; background:rgba(255,255,255,.6); }
+  .rpt2-alertbox-item { display:block; width:100%; text-align:right; padding:11px 18px; font-size:12.5px; color:var(--ink); border-top:1px solid var(--border); background:none; border-left:none; border-right:none; border-bottom:none; cursor:pointer; font-family:inherit; transition:background .12s; }
+  .rpt2-alertbox-item:hover { background:var(--sand); }
   .card-head {
     padding: 16px 20px 12px;
     border-bottom: 1px solid var(--border);
@@ -443,15 +537,15 @@
     width: 100%; border-collapse: collapse; font-size: 13px;
   }
   th {
-    background: var(--sand);
-    padding: 11px 14px;
+    background: oklch(28% .008 40 / .05);
+    padding: 12px 14px;
     text-align: right;
     font-weight: 500;
     font-size: 10.5px;
     text-transform: uppercase;
-    letter-spacing: .05em;
-    color: var(--ink-3);
-    border-bottom: 1px solid var(--border);
+    letter-spacing: .06em;
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--gold);
     white-space: nowrap;
   }
   td {
@@ -459,16 +553,18 @@
     border-bottom: 1px solid var(--border);
     color: var(--ink-2);
     vertical-align: middle;
+    transition: background .12s;
   }
-  tr:hover td { background: var(--sand); }
+  tbody tr:nth-child(even) td { background: oklch(98% .006 70); }
+  tr:hover td { background: var(--gold-light); }
   tr:last-child td { border-bottom: none; }
 
   .badge {
     display: inline-block;
-    padding: 3px 9px;
+    padding: 4px 10px;
     border-radius: 20px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
   }
   .badge-green { background: var(--green-light); color: #0B4A30; }
@@ -557,12 +653,27 @@
   .amount { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 
   /* ── RESPONSIVE ── */
+  #mobile-nav-toggle { display: none; }
   @media (max-width: 900px) {
     header { padding: 0 16px; }
-    nav { padding: 0 16px; overflow-x: auto; }
     .page { padding: 16px; }
     .two-col, .three-col { grid-template-columns: 1fr; }
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* قائمة تنقّل منسدلة (☰) بدل الشريط الأفقي القابل للتمرير فقط — تجربة جوال حقيقية */
+    #mobile-nav-toggle { display: flex; }
+    nav { display: none; }
+    body.mobile-nav-open nav {
+      display: flex; flex-direction: column; align-items: stretch;
+      position: fixed; top: 64px; right: 0; left: 0; z-index: 150;
+      max-height: calc(100vh - 64px); overflow-y: auto; padding: 8px 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.18);
+    }
+    body.mobile-nav-open .nav-btn {
+      text-align: right; border-bottom: 1px solid var(--border); border-left: none;
+      padding: 14px 4px; width: 100%; display: flex; align-items: center; gap: 10px;
+    }
+    body.mobile-nav-open .nav-divider { display: block; height: 1px; background: var(--border); margin: 6px 4px; }
   }
 
   /* ── MODAL ── */
@@ -854,7 +965,10 @@
     background: var(--sand, #F7F4EE);
     font-weight: 600; color: var(--green-dark);
   }
-  .pay-empty { text-align:center; padding: 40px 0; color: var(--ink-3); font-size: 13px; }
+  .pay-empty { text-align:center; padding: 40px 20px; color: var(--ink-3); font-size: 13px; }
+  .pay-empty::before { content: '📋'; display:block; font-size: 26px; margin-bottom: 8px; opacity: .5; }
+  .mini-empty { text-align:center; padding: 16px; color: var(--ink-3); font-size: 12px; }
+  .mini-empty::before { content: '📋'; display:block; font-size: 20px; margin-bottom: 6px; opacity: .5; }
   .pay-client-row { transition: background .15s; }
   .pay-client-row:hover { background: var(--sand); }
 </style>
@@ -1182,6 +1296,7 @@
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:16px;">
+    <button id="mobile-nav-toggle" onclick="toggleMobileNav()" aria-label="القائمة" style="background:none;border:1px solid rgba(255,255,255,.3);color:#fff;width:36px;height:36px;border-radius:8px;font-size:16px;cursor:pointer;align-items:center;justify-content:center;">☰</button>
     <div class="header-date" id="header-date-txt">الوضع الحالي: <span>10 يونيو 2026</span></div>
     <div class="user-badge" id="user-badge" onclick="toggleUserDropdown()" style="display:none;">
       <div class="user-avatar" id="user-avatar">؟</div>
@@ -1200,14 +1315,15 @@
 
 <!-- NAV -->
 <nav>
-  <button class="nav-btn" data-nav="contracts" onclick="showPage('contracts', this)">العقود</button>
-  <button class="nav-btn" data-nav="operations" onclick="showPage('operations', this)">التشغيل</button>
-  <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); requestAnimationFrame(()=>{renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();});">الدفعات</button>
-  <button class="nav-btn" data-nav="alerts" onclick="showPage('alerts', this)">التنبيهات</button>
-  <button class="nav-btn active" data-nav="reports" onclick="showPage('reports', this)">التقارير</button>
-  <button class="nav-btn" data-nav="database" onclick="showPage('database', this)">قاعدة البيانات</button>
-  <button class="nav-btn" data-nav="users" onclick="showPage('users', this)" style="color:var(--green-acc);display:none;">👥 المستخدمون</button>
-  <button class="nav-btn" data-nav="auditlog" onclick="showPage('auditlog', this)" style="color:var(--amber);">🕐 سجل التعديلات</button>
+  <button class="nav-btn" data-nav="contracts" onclick="showPage('contracts', this)"><span class="nav-icon">📄</span> العقود</button>
+  <button class="nav-btn" data-nav="operations" onclick="showPage('operations', this)"><span class="nav-icon">🚌</span> التشغيل</button>
+  <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); requestAnimationFrame(()=>{renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();});"><span class="nav-icon">💳</span> الدفعات</button>
+  <button class="nav-btn" data-nav="alerts" onclick="showPage('alerts', this)"><span class="nav-icon">🔔</span> التنبيهات</button>
+  <button class="nav-btn active" data-nav="reports" onclick="showPage('reports', this)"><span class="nav-icon">📊</span> التقارير</button>
+  <button class="nav-btn" data-nav="database" onclick="showPage('database', this)"><span class="nav-icon">🗄</span> قاعدة البيانات</button>
+  <div class="nav-divider"></div>
+  <button class="nav-btn" data-nav="users" onclick="showPage('users', this)" style="color:var(--green-acc);display:none;"><span class="nav-icon">👥</span> المستخدمون</button>
+  <button class="nav-btn" data-nav="auditlog" onclick="showPage('auditlog', this)" style="color:var(--amber);"><span class="nav-icon">🕐</span> سجل التعديلات</button>
 </nav>
 
 <!-- زر طي/فتح القائمة الجانبية -->
@@ -1645,14 +1761,7 @@
         <div class="section-title">العملاء</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('client')">+ إضافة عميل</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>اسم العميل</th><th>رقم التواصل</th><th>الفنادق التابعة</th><th>ملاحظات</th><th></th></tr></thead>
-            <tbody id="db-clients-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-clients-body" class="db-cards-grid"></div>
     </div>
 
     <!-- TAB: HOTELS -->
@@ -1661,14 +1770,7 @@
         <div class="section-title">الفنادق</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('hotel')">+ إضافة فندق</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>اسم الفندق</th><th>الموقع</th><th>المحور</th><th>ملاحظات</th><th></th></tr></thead>
-            <tbody id="db-hotels-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-hotels-body" class="db-cards-grid"></div>
     </div>
 
     <!-- TAB: AXES -->
@@ -1677,14 +1779,7 @@
         <div class="section-title">المحاور والمسارات</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('axis')">+ إضافة محور</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>اسم المحور</th><th>المشغّل</th><th>المسارات</th><th>نقاط الفرز</th><th></th></tr></thead>
-            <tbody id="db-axes-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-axes-body" class="db-cards-grid"></div>
     </div>
 
     <!-- TAB: CARRIERS -->
@@ -1693,14 +1788,7 @@
         <div class="section-title">الشركات الناقلة</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('carrier')">+ إضافة ناقل</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>اسم الشركة</th><th>ملاحظات</th><th></th></tr></thead>
-            <tbody id="db-carriers-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-carriers-body" class="db-cards-grid"></div>
     </div>
 
     <!-- TAB: CONTRACT STATUSES -->
@@ -1709,14 +1797,7 @@
         <div class="section-title">حالات التعاقد</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('status')">+ إضافة حالة</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>الحالة</th><th>اللون</th><th>الوصف</th><th></th></tr></thead>
-            <tbody id="db-statuses-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-statuses-body" class="db-cards-grid"></div>
     </div>
 
     <!-- TAB: DISCOUNT REASONS -->
@@ -1725,14 +1806,7 @@
         <div class="section-title">أسباب الخصم</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('discount')">+ إضافة سبب</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>سبب الخصم</th><th>ملاحظات</th><th></th></tr></thead>
-            <tbody id="db-discount-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-discount-body" class="db-cards-grid"></div>
     </div>
 
     <!-- TAB: CLASSIFICATIONS -->
@@ -1741,14 +1815,7 @@
         <div class="section-title">التصنيفات</div>
         <button class="btn-sm btn-primary" onclick="openDbModal('classify')">+ إضافة تصنيف</button>
       </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>التصنيف</th><th>النوع</th><th>ملاحظات</th><th></th></tr></thead>
-            <tbody id="db-classify-body"></tbody>
-          </table>
-        </div>
-      </div>
+      <div id="db-classify-body" class="db-cards-grid"></div>
     </div>
 
   </div>
@@ -1779,248 +1846,109 @@
     <!-- ── TAB: FINANCIAL ── -->
     <div class="db-panel active" id="rpanel-financial">
 
-      <!-- Command deck -->
-      <div class="rpt-shell">
-        <div class="rpt-eyebrow">لوحة القيادة المالية</div>
-        <div class="rpt-headline"><span class="dot"></span> نبض التحصيل اللحظي</div>
-        <div class="rpt-bento" id="rpt-fin-bento"></div>
-        <div class="rpt-drill" id="rpt-fin-drill" style="display:none;"></div>
-      </div>
-
-      <!-- خريطة الإيرادات التفاعلية -->
-      <div class="section-head" style="margin-top:0;"><div class="section-title">خريطة الإيرادات التفاعلية</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-revenue-body','توزيع الإيرادات','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-revenue-body','توزيع الإيرادات','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;padding:20px;">
-        <div class="rpt-map-donut-wrap">
-          <div class="rpt-map-donut-box">
-            <svg id="rpt-map-donut" viewBox="0 0 180 180" width="180" height="180"></svg>
-            <div class="rpt-map-donut-center" id="rpt-map-donut-center"></div>
+      <!-- شريط الفلاتر اللاصق -->
+      <div class="card" style="position:sticky;top:8px;z-index:20;margin-bottom:16px;">
+        <div class="rpt2-filterbar-row">
+          <div class="rpt2-search-wrap">
+            <span class="rpt2-search-icon">🔍</span>
+            <input type="text" id="rpt2-search" class="rpt2-search-input" placeholder="بحث بالعميل أو رقم العقد..." oninput="renderFinReport()">
           </div>
-          <div class="rpt-map-legend" id="rpt-map-legend"></div>
+          <div class="rpt2-axis-chips" id="rpt2-axis-chips"></div>
+          <label class="rpt2-slider-label">
+            <span>سداد ≥</span>
+            <input type="range" min="0" max="100" value="0" id="rpt2-minpct" oninput="document.getElementById('rpt2-minpct-val').textContent=this.value+'%';renderFinReport()">
+            <b id="rpt2-minpct-val">0%</b>
+          </label>
+          <button class="btn-sm" id="rpt2-clear-btn" onclick="clearFinFilters()" style="display:none;">✕ مسح الفلاتر</button>
+          <div style="margin-right:auto;display:flex;gap:6px;">
+            <button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt2-fin-export-body','الملخص المالي','excel')">⬇ Excel</button>
+            <button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt2-fin-export-body','الملخص المالي','pdf')">⬇ PDF</button>
+          </div>
         </div>
-        <div class="rpt-map-detail" id="rpt-map-detail">اضغط على أي قطاع أو بند من القائمة لعرض تفاصيله هنا</div>
-        <details class="rpt-rawtable"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>البند</th><th>المبلغ (ريال)</th><th>النسبة من الإجمالي</th><th>الحالة</th></tr></thead>
-              <tbody id="rpt-revenue-body"></tbody>
-            </table>
-          </div>
-        </details>
       </div>
 
-      <!-- نبض العقود المالية -->
+      <!-- KPIs -->
+      <div class="kpi-grid" id="rpt2-fin-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;"></div>
+
+      <!-- الإيرادات + التحصيل جنبًا إلى جنب -->
+      <div class="two-col" style="margin-bottom:20px;">
+        <div>
+          <div class="section-head" style="margin-top:0;"><div class="section-title">خريطة الإيرادات · اضغط للفلترة بالمحور</div></div>
+          <div class="card" style="padding:16px;min-height:100%;"><div id="rpt2-revenue-bars"></div></div>
+        </div>
+        <div>
+          <div class="section-head" style="margin-top:0;"><div class="section-title">التحصيل حسب الشهر</div></div>
+          <div class="card" style="padding:16px;"><div id="rpt2-collection-chart" class="rpt2-col-chart"></div></div>
+        </div>
+      </div>
+
+      <!-- شبكة بطاقات العقود -->
       <div class="section-head">
-        <div class="section-title">نبض العقود المالية</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <div class="rpt-toggle" id="rpt-fin-sort-toggle">
-            <button class="active" data-sort="rem" onclick="setFinSort('rem',this)">الأعلى تبقّياً</button>
-            <button data-sort="pct" onclick="setFinSort('pct',this)">الأعلى سداداً</button>
-          </div>
-          <button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-contracts-fin-body','المالية لكل عقد','excel')">⬇ Excel</button>
-          <button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-contracts-fin-body','المالية لكل عقد','pdf')">⬇ PDF</button>
+        <div class="section-title">العقود (<span id="rpt2-fin-count">0</span>)</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:var(--ink-3);">⇅ فرز:</span>
+          <select class="filter-select" id="rpt2-sortby" onchange="renderFinReport()" style="min-width:110px;">
+            <option value="total">الإجمالي</option>
+            <option value="paid">المسدد</option>
+            <option value="remain">المتبقي</option>
+            <option value="pct">نسبة السداد</option>
+          </select>
+          <button class="btn-sm" onclick="rpt2SortDir = rpt2SortDir==='desc'?'asc':'desc'; renderFinReport();">تبديل الاتجاه</button>
         </div>
       </div>
-      <div class="card" style="margin-bottom:20px;padding:16px;">
-        <div class="rpt-contract-grid" id="rpt-contract-grid"></div>
-        <details class="rpt-rawtable" style="margin-top:14px;"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>إجمالي العقد</th><th>المسدد</th><th>المتبقي</th><th>نسبة السداد</th><th>الحالة المالية</th></tr></thead>
-              <tbody id="rpt-contracts-fin-body"></tbody>
-              <tfoot id="rpt-contracts-fin-foot"></tfoot>
-            </table>
-          </div>
-        </details>
-      </div>
+      <div class="db-cards-grid" id="rpt2-fin-cards"></div>
+      <div id="rpt2-fin-empty" class="db-cards-empty" style="display:none;">لا نتائج مطابقة للفلاتر الحالية</div>
 
-      <!-- التحصيل حسب الشهر -->
-      <div class="section-head"><div class="section-title">التحصيل</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-collection-body','التحصيل حسب الشهر','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-collection-body','التحصيل حسب الشهر','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="padding:20px;">
-        <div id="rpt-collection-race" style="animation:rpt-drill-in .3s ease;"></div>
-        <details class="rpt-rawtable"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الشهر</th><th>عدد الدفعات</th><th>إجمالي المحصّل</th></tr></thead>
-              <tbody id="rpt-collection-body"></tbody>
-            </table>
-          </div>
-        </details>
-      </div>
+      <!-- جدول مخفي للتصدير فقط -->
+      <table style="display:none;"><thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الإجمالي</th><th>المسدد</th><th>المتبقي</th><th>نسبة السداد</th></tr></thead><tbody id="rpt2-fin-export-body"></tbody></table>
     </div>
 
     <!-- ── TAB: OPERATIONS ── -->
     <div class="db-panel" id="rpanel-operations">
 
-      <!-- بطاقة الوضع التشغيلي اليوم/غداً -->
-      <div class="rpt-shell">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;position:relative;z-index:1;">
-          <div>
-            <div class="rpt-eyebrow" style="margin-bottom:4px;">الوضع التشغيلي</div>
-            <div style="font-size:19px;font-weight:600;color:#fff;" id="rpt-today-headline">جارٍ التحميل...</div>
+      <!-- منتقي اليوم -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;">
+          <span style="font-size:11px;font-weight:500;color:var(--ink-3);">تاريخ التشغيل:</span>
+          <div class="rpt2-day-toggle">
+            <button class="rpt2-day-btn active" id="rpt2-day-today" onclick="setRpt2Day('today')">اليوم</button>
+            <button class="rpt2-day-btn" id="rpt2-day-tomorrow" onclick="setRpt2Day('tomorrow')">غدًا</button>
+            <button class="rpt2-day-btn" id="rpt2-day-custom" onclick="setRpt2Day('custom')">مخصص</button>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <div style="display:flex;background:rgba(255,255,255,0.08);border-radius:10px;padding:3px;gap:2px;">
-              <button id="rpt-btn-today" onclick="switchDay(0)" style="
-                padding:6px 16px;border-radius:8px;border:none;cursor:pointer;
-                font-family:inherit;font-size:12px;font-weight:500;
-                background:var(--gold);color:#FFFFFF;transition:all .15s;">اليوم</button>
-              <button id="rpt-btn-tomorrow" onclick="switchDay(1)" style="
-                padding:6px 16px;border-radius:8px;border:none;cursor:pointer;
-                font-family:inherit;font-size:12px;font-weight:400;
-                background:transparent;color:rgba(255,255,255,0.6);transition:all .15s;">غداً</button>
-            </div>
-            <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:8px 16px;text-align:center;">
-              <div style="font-size:11px;color:rgba(255,255,255,0.5);">التاريخ</div>
-              <div style="font-size:13px;font-weight:500;color:var(--gold);" id="rpt-today-date">—</div>
-            </div>
+          <input type="date" id="rpt2-custom-date" onchange="rpt2CustomDate=this.value;renderOpsReport();" style="display:none;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;">
+          <div style="margin-right:auto;font-size:12px;">
+            <span style="color:var(--ink-3);">التاريخ الفعّال:</span> <strong id="rpt2-active-date" style="color:var(--green-dark);">—</strong>
           </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;position:relative;z-index:1;">
-          <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;">
-            <div style="font-size:28px;font-weight:700;color:#fff;line-height:1;" id="rpt-today-buses">—</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:4px;">حافلة نشطة <span id="rpt-lbl-buses">اليوم</span></div>
-          </div>
-          <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:12px 16px;cursor:pointer;transition:background .15s;" onclick="toggleTodayDetails('rpt-today')" id="rpt-today-contracts-tile" title="اضغط لعرض/إخفاء العقود النشطة">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div class="rpt-cring" style="--ring-color:var(--gold);width:46px;height:46px;flex-shrink:0;" data-ring-target="0" id="rpt-today-contracts-ring"><b id="rpt-today-contracts" style="width:36px;height:36px;font-size:13px;">—</b></div>
-              <div>
-                <div style="font-size:11px;color:rgba(255,255,255,0.55);">عقد نشط <span id="rpt-lbl-contracts">اليوم</span></div>
-                <div style="font-size:10px;color:var(--gold);margin-top:3px;font-weight:600;" id="rpt-today-toggle-hint">اضغط لعرض التفاصيل ▾</div>
-              </div>
-            </div>
-          </div>
-          <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;">
-            <div style="font-size:28px;font-weight:700;color:#fff;line-height:1;" id="rpt-today-axes">—</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:4px;">محور مُشغَّل <span id="rpt-lbl-axes">اليوم</span></div>
-          </div>
-          <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;">
-            <div style="font-size:22px;font-weight:700;color:#F97316;line-height:1;" id="rpt-today-ending">—</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:4px;"><span id="rpt-lbl-ending">عقد ينتهي قريباً</span></div>
-          </div>
-        </div>
-
-        <div id="rpt-today-ending-list" style="display:flex;flex-direction:column;gap:6px;position:relative;z-index:1;"></div>
-
-        <div id="rpt-today-details-wrap" style="display:none;margin-top:12px;position:relative;z-index:1;">
-          <div id="rpt-today-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;max-height:360px;overflow-y:auto;padding-left:4px;"></div>
         </div>
       </div>
 
-      <!-- Command deck -->
-      <div class="rpt-shell">
-        <div class="rpt-eyebrow">لوحة القيادة التشغيلية</div>
-        <div class="rpt-headline"><span class="dot"></span> نبض الأسطول والمحاور</div>
-        <div class="rpt-bento" id="rpt-ops-bento"></div>
-        <div class="rpt-drill" id="rpt-ops-drill" style="display:none;"></div>
-      </div>
+      <!-- KPIs تشغيلية -->
+      <div class="kpi-grid" id="rpt2-ops-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;"></div>
 
-      <!-- سباق المحاور -->
-      <div class="section-head" style="margin-top:0;">
-        <div class="section-title">سباق المحاور</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <div class="rpt-toggle" id="rpt-ops-metric-toggle">
-            <button class="active" data-metric="buses" onclick="setOpsAxisMetric('buses',this)">حافلات</button>
-            <button data-metric="days" onclick="setOpsAxisMetric('days',this)">أيام تشغيل</button>
-          </div>
-          <button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-ops-axis-body','الحافلات وأيام التشغيل حسب المحور','excel')">⬇ Excel</button>
-          <button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-ops-axis-body','الحافلات وأيام التشغيل حسب المحور','pdf')">⬇ PDF</button>
-        </div>
-      </div>
-      <div class="card" style="margin-bottom:20px;padding:20px;">
-        <div id="rpt-axis-race"></div>
-        <details class="rpt-rawtable"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>المحور</th><th>عدد الحافلات</th><th>أيام التشغيل</th><th>عدد الفنادق</th><th>متوسط الأيام / فندق</th></tr></thead>
-              <tbody id="rpt-ops-axis-body"></tbody>
-              <tfoot id="rpt-ops-axis-foot"></tfoot>
-            </table>
-          </div>
-        </details>
-      </div>
-
-      <!-- نقاط الفرز -->
-      <div class="section-head"><div class="section-title">توزيع نقاط الفرز — باب علي</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-ops-points-body','توزيع نقاط الفرز — باب علي','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-ops-points-body','توزيع نقاط الفرز — باب علي','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;padding:20px;">
-        <div class="rpt-donut-wrap">
-          <div class="rpt-donut" id="rpt-points-donut"></div>
-          <div class="rpt-donut-legend" id="rpt-points-legend"></div>
-        </div>
-        <details class="rpt-rawtable" style="margin-top:14px;"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>نقطة الفرز</th><th>عدد الحافلات</th><th>عدد العقود</th></tr></thead>
-              <tbody id="rpt-ops-points-body"></tbody>
-            </table>
-          </div>
-        </details>
-      </div>
-
-      <!-- تفاصيل العقود التشغيلية -->
-      <div class="section-head"><div class="section-title">تفاصيل العقود التشغيلية</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-ops-contracts-body','تفاصيل العقود التشغيلية','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-ops-contracts-body','تفاصيل العقود التشغيلية','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="padding:16px;">
-        <div class="rpt-client-chips" id="rpt-ops-contract-grid"></div>
-        <div id="rpt-ops-contracts-drill"></div>
-        <details class="rpt-rawtable" style="margin-top:14px;"><summary>📋 عرض البيانات كجدول للتصدير</summary>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>المسار</th><th>الناقل</th><th>الحافلات</th><th>البداية</th><th>النهاية</th><th>الأيام</th><th>السعر/يوم</th></tr></thead>
-              <tbody id="rpt-ops-contracts-body"></tbody>
-            </table>
-          </div>
-        </details>
+      <!-- سباق المحاور + جدول الفنادق النشطة -->
+      <div class="section-head" style="margin-top:0;"><div class="section-title">سباق المحاور · اضغط لعرض الفنادق النشطة</div></div>
+      <div class="card" style="padding:20px;">
+        <div id="rpt2-axis-race"></div>
       </div>
 
     </div>
 
     <!-- ── TAB: ALERTS DETAIL ── -->
     <div class="db-panel" id="rpanel-alerts-report">
+      <div class="two-col" id="rpt2-alerts-grid" style="grid-template-columns:1fr 1fr;gap:16px;"></div>
+    </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;" id="rpt-alert-kpis"></div>
-
-      <!-- متعثرون -->
-      <div class="section-head"><div class="section-title">العملاء المتعثرون</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-defaulted-body','العملاء المتعثرون','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-defaulted-body','العملاء المتعثرون','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الناقل</th><th>الإجمالي</th><th>المسدد</th><th>المتبقي</th><th>نسبة السداد</th></tr></thead>
-            <tbody id="rpt-defaulted-body"></tbody>
-          </table>
+    <!-- ── مودال تفاصيل العقد (مشترك بين التبويبات الثلاثة) ── -->
+    <div class="modal-overlay" id="rpt2-contract-modal" onclick="if(event.target===this) closeRpt2Modal();">
+      <div class="modal" style="max-width:520px;">
+        <div class="modal-header">
+          <div>
+            <div class="modal-title" id="rpt2-modal-client">—</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;" id="rpt2-modal-id">—</div>
+          </div>
+          <button class="modal-close" onclick="closeRpt2Modal()">✕</button>
         </div>
-      </div>
-
-      <!-- متبقي > 50% -->
-      <div class="section-head"><div class="section-title">عقود المتبقي فيها أكثر من 50%</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-highrem-body','عقود المتبقي فيها أكثر من 50%','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-highrem-body','عقود المتبقي فيها أكثر من 50%','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الإجمالي</th><th>المتبقي</th><th>نسبة المتبقي</th><th>تاريخ النهاية</th></tr></thead>
-            <tbody id="rpt-highrem-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- لم تبدأ -->
-      <div class="section-head"><div class="section-title">عقود لم تبدأ بعد</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-notstarted-body','عقود لم تبدأ بعد','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-notstarted-body','عقود لم تبدأ بعد','pdf')">⬇ PDF</button></div></div>
-      <div class="card" style="margin-bottom:20px;">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>تاريخ البداية</th><th>تاريخ النهاية</th><th>الحافلات</th><th>الإجمالي</th></tr></thead>
-            <tbody id="rpt-notstarted-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- بدون تسعير -->
-      <div class="section-head"><div class="section-title">عقود بدون تسعير</div><div style="display:flex;gap:6px;"><button class="btn-sm export-xls export-mini" onclick="exportTableReport('rpt-nopricing-body','عقود بدون تسعير','excel')">⬇ Excel</button><button class="btn-sm export-pdf export-mini" onclick="exportTableReport('rpt-nopricing-body','عقود بدون تسعير','pdf')">⬇ PDF</button></div></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>#</th><th>العميل</th><th>المحور</th><th>الناقل</th><th>البداية</th><th>النهاية</th><th>الأيام</th></tr></thead>
-            <tbody id="rpt-nopricing-body"></tbody>
-          </table>
-        </div>
+        <div class="modal-body" id="rpt2-modal-body"></div>
       </div>
     </div>
 
@@ -2123,24 +2051,9 @@
       <button class="btn-sm" onclick="clearAuditFilter()" style="margin-right:auto;">مسح الفلتر</button>
     </div>
 
-    <!-- Table -->
-    <div class="card">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:40px;">#</th>
-              <th>التاريخ والوقت</th>
-              <th>المستخدم</th>
-              <th>نوع العملية</th>
-              <th>العقد / الفندق</th>
-              <th>التفاصيل</th>
-              <th>ملاحظة</th>
-            </tr>
-          </thead>
-          <tbody id="audit-tbody"></tbody>
-        </table>
-      </div>
+    <!-- Feed -->
+    <div class="card" style="padding:8px 16px;">
+      <div id="audit-tbody" class="audit-feed"></div>
       <div style="text-align:center;padding:14px;display:none;" id="audit-loadmore-wrap">
         <button class="btn-sm" id="audit-loadmore-btn" onclick="loadMoreAuditLog()">تحميل المزيد ▾</button>
       </div>
@@ -2519,7 +2432,7 @@
 
         <!-- قائمة الخصومات المسجّلة -->
         <div id="detail-discounts-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-          <div id="detail-no-discounts" style="text-align:center;padding:14px;color:var(--ink-3);font-size:12px;">لا توجد خصومات مسجّلة على هذا العقد</div>
+          <div id="detail-no-discounts" class="mini-empty">لا توجد خصومات مسجّلة على هذا العقد</div>
         </div>
 
         <!-- نموذج إضافة خصم (مخفي افتراضياً) -->
@@ -2594,7 +2507,7 @@
 
         <!-- قائمة الملفات المرفوعة -->
         <div id="detail-files-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-          <div id="detail-no-files" style="text-align:center;padding:14px;color:var(--ink-3);font-size:12px;">لا توجد ملفات مرفوعة على هذا العقد</div>
+          <div id="detail-no-files" class="mini-empty">لا توجد ملفات مرفوعة على هذا العقد</div>
         </div>
 
         <!-- نموذج رفع ملف (مخفي افتراضياً — يظهر بالضغط على "+ رفع ملف" ويختفي بعد الحفظ) -->
@@ -3302,7 +3215,13 @@ window.showPage = function(id, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
+  document.body.classList.remove('mobile-nav-open'); // يقفل القائمة المنسدلة بالجوال بعد اختيار صفحة
 }
+
+// فتح/إغلاق قائمة التنقل المنسدلة على شاشات الجوال (☰)
+window.toggleMobileNav = function() {
+  document.body.classList.toggle('mobile-nav-open');
+};
 
 // طي/فتح القائمة الجانبية — يحفظ الحالة عشان تبقى كما هي بعد تحديث الصفحة
 window.toggleSidebar = function() {
@@ -4505,21 +4424,21 @@ window.updatePaySchedule = function() {
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead>
         <tr style="background:var(--sand);">
-          <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);border-bottom:1px solid var(--border);">#</th>
-          <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);border-bottom:1px solid var(--border);">تاريخ الاستحقاق</th>
-          <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);border-bottom:1px solid var(--border);">المبلغ (ريال)</th>
+          <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);border-bottom:1px solid var(--border);">#</th>
+          <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);border-bottom:1px solid var(--border);">تاريخ الاستحقاق</th>
+          <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);border-bottom:1px solid var(--border);">المبلغ (ريال)</th>
         </tr>
       </thead>
       <tbody>
         ${rows.map((r,i) => `
           <tr style="${i%2===0?'background:var(--white)':'background:var(--sand)'}">
-            <td style="padding:8px 12px;color:var(--ink-3);">${r.num}</td>
-            <td style="padding:8px 12px;font-weight:500;">${r.due}</td>
-            <td style="padding:8px 12px;font-weight:600;color:var(--green-dark);">${r.amount.toLocaleString()}</td>
+            <td style="padding:10px 12px;color:var(--ink-3);">${r.num}</td>
+            <td style="padding:10px 12px;font-weight:500;">${r.due}</td>
+            <td style="padding:10px 12px;font-weight:600;color:var(--green-dark);">${r.amount.toLocaleString()}</td>
           </tr>`).join('')}
         <tr style="background:var(--green-light);">
-          <td colspan="2" style="padding:8px 12px;font-weight:600;color:var(--green-dark);">الإجمالي</td>
-          <td style="padding:8px 12px;font-weight:700;color:var(--green-dark);">${total.toLocaleString()}</td>
+          <td colspan="2" style="padding:10px 12px;font-weight:600;color:var(--green-dark);">الإجمالي</td>
+          <td style="padding:10px 12px;font-weight:700;color:var(--green-dark);">${total.toLocaleString()}</td>
         </tr>
       </tbody>
     </table>`;
@@ -4638,7 +4557,7 @@ window.renderDetailPayments = function(id) {
   if (!el) return;
   if (!log.length) {
     // إعادة إنشاء رسالة الفراغ (الإصدار السابق كان يفقدها بعد أول دفعة فينهار لاحقاً)
-    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink-3);font-size:12px;" id="detail-no-payments">لا توجد دفعات بعد</div>';
+    el.innerHTML = '<div id="detail-no-payments" class="mini-empty">لا توجد دفعات بعد</div>';
     return;
   }
   el.innerHTML = log.map(p => {
@@ -4948,19 +4867,19 @@ window.renderDb = function() {
   // CLIENTS
   document.getElementById('db-clients-body').innerHTML = db.clients.length ? db.clients.map(c => {
     const hotelNames = (c.hotelIds||[]).map(hid => { const h = db.hotels.find(x=>x.id===hid); return h?h.name:null; }).filter(Boolean);
-    const hotelsCell = hotelNames.length
-      ? `<span style="font-size:11px;color:var(--green-dark);">${hotelNames.length} فندق</span><div style="font-size:10px;color:var(--ink-3);margin-top:2px;">${esc(hotelNames.join('، '))}</div>`
-      : '<span style="font-size:11px;color:var(--ink-3);">—</span>';
+    const hotelsRow = hotelNames.length
+      ? `<div class="db-card-row"><span style="color:var(--green-dark);font-weight:500;">${hotelNames.length} فندق</span> — ${esc(hotelNames.join('، '))}</div>`
+      : `<div class="db-card-row">لا توجد فنادق مرتبطة</div>`;
     return `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${c.id}</td>
-      <td><div class="hotel-name">${esc(c.name)}</div></td>
-      <td style="font-size:12px;">${esc(c.contact)||'—'}</td>
-      <td>${hotelsCell}</td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td>
-      <td style="white-space:nowrap;"><button class="edit-btn" onclick="openDbEdit('clients',${c.id})">تعديل</button><button class="del-btn" onclick="askDelete('clients',${c.id},'${escJs(c.name)}')">حذف</button></td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-3);">لا يوجد عملاء — أضف عميلاً</td></tr>';
+    <div class="db-card">
+      <div class="db-card-id">#${c.id}</div>
+      <div class="db-card-title">${esc(c.name)}</div>
+      <div class="db-card-row">${esc(c.contact)||'—'}</div>
+      ${hotelsRow}
+      ${c.notes ? `<div class="db-card-notes">${esc(c.notes)}</div>` : ''}
+      <div class="db-card-actions"><button class="edit-btn" onclick="openDbEdit('clients',${c.id})">تعديل</button><button class="del-btn" onclick="askDelete('clients',${c.id},'${escJs(c.name)}')">حذف</button></div>
+    </div>`;
+  }).join('') : '<div class="db-cards-empty">لا يوجد عملاء — أضف عميلاً</div>';
 
   // HOTELS
   // عدّ تكرار أسماء الفنادق لإظهار الموقع تحت الاسم فقط عند التكرار
@@ -4970,62 +4889,61 @@ window.renderDb = function() {
   document.getElementById('db-hotels-body').innerHTML = db.hotels.length ? db.hotels.map(h => {
     const isDup = hotelNameCounts[h.name] > 1 && h.location;
     return `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${h.id}</td>
-      <td><div class="hotel-name">${esc(h.name)}</div>${isDup ? `<div class="hotel-sub">${esc(h.location)}</div>` : ''}</td>
-      <td style="font-size:12px;">${esc(h.location)||'—'}</td>
-      <td style="font-size:12px;">${esc(h.axis)||'—'}</td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(h.notes)||'—'}</td>
-      <td style="white-space:nowrap;"><button class="edit-btn" onclick="openDbEdit('hotels',${h.id})">تعديل</button><button class="del-btn" onclick="askDelete('hotels',${h.id},'${escJs(h.name)}')">حذف</button></td>
-    </tr>`;
-  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-3);">لا توجد فنادق — أضف فندقاً</td></tr>';
+    <div class="db-card">
+      <div class="db-card-id">#${h.id}</div>
+      <div class="db-card-title">${esc(h.name)}${isDup ? ` <span style="font-size:11px;font-weight:400;color:var(--ink-3);">(${esc(h.location)})</span>` : ''}</div>
+      <div class="db-card-row">📍 ${esc(h.location)||'—'}</div>
+      <div class="db-card-row">🗺 ${esc(h.axis)||'—'}</div>
+      ${h.notes ? `<div class="db-card-notes">${esc(h.notes)}</div>` : ''}
+      <div class="db-card-actions"><button class="edit-btn" onclick="openDbEdit('hotels',${h.id})">تعديل</button><button class="del-btn" onclick="askDelete('hotels',${h.id},'${escJs(h.name)}')">حذف</button></div>
+    </div>`;
+  }).join('') : '<div class="db-cards-empty">لا توجد فنادق — أضف فندقاً</div>';
 
-  document.getElementById('db-axes-body').innerHTML = db.axes.map(a => `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${a.id}</td>
-      <td><div class="hotel-name">${esc(a.name)}</div></td>
-      <td><span style="font-weight:500;color:var(--green-dark);background:var(--gold-light);padding:2px 10px;border-radius:10px;font-size:12px;">${esc(a.operator)}</span></td>
-      <td style="font-size:12px;">${esc(a.routes.join(' · '))}</td>
-      <td style="font-size:11px;color:var(--ink-3);">${esc(a.points.join('، '))}</td>
-      <td style="white-space:nowrap;">
+  document.getElementById('db-axes-body').innerHTML = db.axes.length ? db.axes.map(a => `
+    <div class="db-card">
+      <div class="db-card-id">#${a.id}</div>
+      <div class="db-card-title">${esc(a.name)}</div>
+      <div class="db-card-row"><span style="font-weight:500;color:var(--green-dark);background:var(--gold-light);padding:2px 10px;border-radius:10px;font-size:11px;">${esc(a.operator)}</span></div>
+      <div class="db-card-row">${esc(a.routes.join(' · '))||'—'}</div>
+      <div class="db-card-notes">نقاط الفرز: ${esc(a.points.join('، '))||'—'}</div>
+      <div class="db-card-actions">
         <button class="edit-btn" onclick="openDbEdit('axes',${a.id})" title="تعديل / تغيير المشغّل">تعديل</button>
         <button class="del-btn" onclick="askDelete('axes',${a.id},'${escJs(a.name)}')">حذف</button>
-      </td>
-    </tr>`).join('');
+      </div>
+    </div>`).join('') : '<div class="db-cards-empty">لا توجد محاور — أضف محورًا</div>';
 
-  document.getElementById('db-carriers-body').innerHTML = db.carriers.map(c => `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${c.id}</td>
-      <td><div class="hotel-name">${esc(c.name)}</div></td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(c.notes)}</td>
-      <td><button class="del-btn" onclick="askDelete('carriers',${c.id},'${escJs(c.name)}')">حذف</button></td>
-    </tr>`).join('');
+  document.getElementById('db-carriers-body').innerHTML = db.carriers.length ? db.carriers.map(c => `
+    <div class="db-card">
+      <div class="db-card-id">#${c.id}</div>
+      <div class="db-card-title">${esc(c.name)}</div>
+      ${c.notes ? `<div class="db-card-notes">${esc(c.notes)}</div>` : ''}
+      <div class="db-card-actions"><button class="del-btn" onclick="askDelete('carriers',${c.id},'${escJs(c.name)}')">حذف</button></div>
+    </div>`).join('') : '<div class="db-cards-empty">لا يوجد ناقلون — أضف ناقلاً</div>';
 
-  document.getElementById('db-statuses-body').innerHTML = db.statuses.map(s => `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${s.id}</td>
-      <td style="font-weight:500;">${esc(s.name)}</td>
-      <td><span class="color-dot" style="background:${esc(s.color)};display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:6px;"></span><span style="font-size:11px;color:var(--ink-3);">${esc(s.color)}</span></td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(s.desc)}</td>
-      <td><button class="del-btn" onclick="askDelete('statuses',${s.id},'${escJs(s.name)}')">حذف</button></td>
-    </tr>`).join('');
+  document.getElementById('db-statuses-body').innerHTML = db.statuses.length ? db.statuses.map(s => `
+    <div class="db-card">
+      <div class="db-card-id">#${s.id}</div>
+      <div class="db-card-title"><span class="color-dot" style="background:${esc(s.color)};"></span>${esc(s.name)}</div>
+      ${s.desc ? `<div class="db-card-row">${esc(s.desc)}</div>` : ''}
+      <div class="db-card-actions"><button class="del-btn" onclick="askDelete('statuses',${s.id},'${escJs(s.name)}')">حذف</button></div>
+    </div>`).join('') : '<div class="db-cards-empty">لا توجد حالات — أضف حالة</div>';
 
-  document.getElementById('db-discount-body').innerHTML = db.discount.map(d => `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${d.id}</td>
-      <td style="font-weight:500;">${esc(d.reason)}</td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(d.notes)||'—'}</td>
-      <td><button class="del-btn" onclick="askDelete('discount',${d.id},'${escJs(d.reason)}')">حذف</button></td>
-    </tr>`).join('');
+  document.getElementById('db-discount-body').innerHTML = db.discount.length ? db.discount.map(d => `
+    <div class="db-card">
+      <div class="db-card-id">#${d.id}</div>
+      <div class="db-card-title">${esc(d.reason)}</div>
+      ${d.notes ? `<div class="db-card-row">${esc(d.notes)}</div>` : ''}
+      <div class="db-card-actions"><button class="del-btn" onclick="askDelete('discount',${d.id},'${escJs(d.reason)}')">حذف</button></div>
+    </div>`).join('') : '<div class="db-cards-empty">لا توجد أسباب خصم — أضف سببًا</div>';
 
-  document.getElementById('db-classify-body').innerHTML = db.classify.map(c => `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${c.id}</td>
-      <td style="font-weight:500;">${esc(c.name)}</td>
-      <td><span class="badge badge-gray">${esc(c.type)}</span></td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(c.notes)||'—'}</td>
-      <td><button class="del-btn" onclick="askDelete('classify',${c.id},'${escJs(c.name)}')">حذف</button></td>
-    </tr>`).join('');
+  document.getElementById('db-classify-body').innerHTML = db.classify.length ? db.classify.map(c => `
+    <div class="db-card">
+      <div class="db-card-id">#${c.id}</div>
+      <div class="db-card-title">${esc(c.name)}</div>
+      <div class="db-card-row"><span class="badge badge-gray">${esc(c.type)}</span></div>
+      ${c.notes ? `<div class="db-card-notes">${esc(c.notes)}</div>` : ''}
+      <div class="db-card-actions"><button class="del-btn" onclick="askDelete('classify',${c.id},'${escJs(c.name)}')">حذف</button></div>
+    </div>`).join('') : '<div class="db-cards-empty">لا توجد تصنيفات — أضف تصنيفًا</div>';
 }
 
 // بحث فوري داخل قائمة فنادق العميل
@@ -6085,118 +6003,299 @@ function renderOpsContractCards(all) {
   renderClientOpsDrill('rpt-ops-contracts-drill', rptOpsContractsOpenClient);
 }
 
-window.renderReports = function() {
-  if (typeof renderTodayCard === 'function') renderTodayCard();
-  const active = contracts.filter(c => c.total > 0);
-  const all    = contracts;
+/* ══ التقارير (تصميم جديد) — حالة عامة ══ */
+let rpt2SelectedAxes = new Set();
+let rpt2SortBy = 'total';
+let rpt2SortDir = 'desc';
+let rpt2Day = 'today';
+let rpt2CustomDate = '';
+let rpt2ModalContractId = null;
 
-  /* ─── FINANCIAL ─── */
-  const totalContracted = active.reduce((s,c)=>s+c.total,0);
-  const totalPaid = active.reduce((s,c)=>s+(c.total-c.rem),0);
-  const totalRem  = active.reduce((s,c)=>s+c.rem,0);
-  const pct = totalContracted>0 ? Math.round(totalPaid/totalContracted*100) : 0;
+window.toggleRpt2Axis = function(axis) {
+  if (rpt2SelectedAxes.has(axis)) rpt2SelectedAxes.delete(axis); else rpt2SelectedAxes.add(axis);
+  renderFinReport();
+};
+window.toggleRpt2OpsAxis = function(axis) {
+  const key = 'ops:' + axis;
+  if (rpt2SelectedAxes.has(key)) rpt2SelectedAxes.delete(key); else rpt2SelectedAxes.add(key);
+  renderOpsReport();
+};
+window.clearFinFilters = function() {
+  rpt2SelectedAxes.clear();
+  const s = document.getElementById('rpt2-search'); if (s) s.value = '';
+  const m = document.getElementById('rpt2-minpct'); if (m) m.value = 0;
+  const mv = document.getElementById('rpt2-minpct-val'); if (mv) mv.textContent = '0%';
+  renderFinReport();
+};
 
-  rptActiveContracts = active;
-  const overdueAmount = computeOverdueToDate(active);
-  const noValueCount = all.filter(c => !c.total || c.total === 0).length;
-  renderFinBento(totalContracted, totalPaid, totalRem, pct, noValueCount, overdueAmount);
-  renderContractPulse();
+function renderFinReport() {
+  const all = contracts;
+  const search = (document.getElementById('rpt2-search')?.value || '').trim();
+  const minPct = Number(document.getElementById('rpt2-minpct')?.value || 0);
+  const sortBy = document.getElementById('rpt2-sortby')?.value || 'total';
 
-  const opRevenue = active.reduce((s,c) => s + (c.price||0) * (c.buses||0) * (c.days||0), 0);
-  const rawahelStationFees = active.filter(c => c.carrier === 'رواحل').reduce((s,c) => s + (c.rental||0) * (c.buses||0) * (c.days||0), 0);
-  const otherStationFees = active.filter(c => c.carrier && c.carrier !== 'رواحل' && c.carrier !== '—').reduce((s,c) => s + (c.rental||0) * (c.buses||0) * (c.days||0), 0);
-  const revRows = [
-    {label:'إجمالي إيجار الحافلات',      amount:opRevenue,        note:'الإيراد التشغيلي الأساسي',
-     breakdown: () => groupByClient(active, c => (c.price||0)*(c.buses||0)*(c.days||0))},
-    {label:'رسوم المحاور — رواحل',        amount:rawahelStationFees, note:'رسوم المحاور الخاصة بشركة رواحل',
-     breakdown: () => groupByAxis(active.filter(c=>c.carrier==='رواحل'), c => (c.rental||0)*(c.buses||0)*(c.days||0))},
-    {label:'رسوم المحاور — شركات أخرى',   amount:otherStationFees,  note:'رسوم المحاور لباقي الشركات',
-     breakdown: () => groupByAxis(active.filter(c=>c.carrier && c.carrier!=='رواحل' && c.carrier!=='—'), c => (c.rental||0)*(c.buses||0)*(c.days||0))},
-  ];
-  const revTotal = revRows.reduce((s,r)=>s+r.amount,0);
-  document.getElementById('rpt-revenue-body').innerHTML = revRows.map(r=>{
-    const p=Math.round(r.amount/revTotal*100);
-    return `<tr><td style="font-weight:500;">${r.label}</td><td class="amount" style="font-weight:600;color:var(--green-dark);">${fmtN(r.amount)}</td><td>${pctBar(p)}</td><td style="font-size:12px;color:var(--ink-3);">${r.note}</td></tr>`;
-  }).join('')+`<tr style="background:var(--sand);"><td style="font-weight:600;">الإجمالي</td><td class="amount" style="font-weight:700;color:var(--green-dark);">${fmtN(revTotal)}</td><td></td><td></td></tr>`;
-  renderRevenueMap(revRows, revTotal);
+  const AXES = [...new Set(all.map(c => c.axis).filter(Boolean))];
+  const chipsEl = document.getElementById('rpt2-axis-chips');
+  if (chipsEl) chipsEl.innerHTML = AXES.map(a => `<button class="rpt2-chip ${rpt2SelectedAxes.has(a)?'active':''}" onclick="toggleRpt2Axis('${escJs(a)}')">${esc(a)}</button>`).join('');
 
-  let cTotalSum=0,cPaidSum=0,cRemSum=0;
-  document.getElementById('rpt-contracts-fin-body').innerHTML = active.map(c=>{
-    const paid=c.total-c.rem; const p=Math.round(paid/c.total*100);
-    cTotalSum+=c.total; cPaidSum+=paid; cRemSum+=c.rem;
-    return `<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)} · ${esc(c.axis)}</div></td><td style="font-size:12px;">${esc(c.axis)}</td><td class="amount">${fmtN(c.total)}</td><td class="amount" style="color:var(--green-acc);font-weight:500;">${fmtN(paid)}</td><td class="amount" style="color:${c.rem>0?'var(--amber)':'var(--green-acc)'};">${c.rem>0?fmtN(c.rem):'—'}</td><td>${pctBar(p)}</td><td>${statusBadgeHtml(p)}</td></tr>`;
-  }).join('');
-  document.getElementById('rpt-contracts-fin-foot').innerHTML = `<tr style="background:var(--sand);font-weight:600;"><td colspan="3">الإجمالي</td><td class="amount">${fmtN(cTotalSum)}</td><td class="amount" style="color:var(--green-acc);">${fmtN(cPaidSum)}</td><td class="amount" style="color:var(--amber);">${fmtN(cRemSum)}</td><td colspan="2"></td></tr>`;
+  const filtered = all.filter(c => {
+    if (rpt2SelectedAxes.size && !rpt2SelectedAxes.has(c.axis)) return false;
+    if (search && !(c.client||'').includes(search) && !String(c.displayId||c.id).includes(search)) return false;
+    const pct = c.total ? ((c.total-c.rem)/c.total)*100 : 0;
+    if (pct < minPct) return false;
+    return true;
+  });
+
+  const clearBtn = document.getElementById('rpt2-clear-btn');
+  const axesActive = [...rpt2SelectedAxes].some(a => !a.startsWith('ops:'));
+  if (clearBtn) clearBtn.style.display = (axesActive || search || minPct>0) ? 'inline-block' : 'none';
+
+  const sorted = filtered.slice().sort((a,b) => {
+    const val = c => {
+      const paid = c.total - c.rem;
+      if (sortBy==='total') return c.total;
+      if (sortBy==='paid') return paid;
+      if (sortBy==='remain') return c.rem;
+      return c.total ? paid/c.total : 0;
+    };
+    return rpt2SortDir==='desc' ? val(b)-val(a) : val(a)-val(b);
+  });
+
+  const totalContracted = filtered.reduce((s,c)=>s+(c.total||0),0);
+  const totalPaid = filtered.reduce((s,c)=>s+((c.total||0)-(c.rem||0)),0);
+  const totalRem = totalContracted - totalPaid;
+  const rate = totalContracted ? Math.round(totalPaid/totalContracted*100) : 0;
+
+  const kpiEl = document.getElementById('rpt2-fin-kpis');
+  if (kpiEl) {
+    kpiEl.innerHTML = [
+      {label:'إجمالي العقود', value: filtered.length.toLocaleString(), sub:`من ${all.length}`, icon:'💰'},
+      {label:'قيمة العقود', value: fmtN(totalContracted), sub:'ر.س', icon:'📈'},
+      {label:'المتبقي', value: fmtN(totalRem), sub:'ر.س', icon:'📉'},
+      {label:'نسبة التحصيل', value: rate+'%', sub: fmtN(totalPaid)+' ر.س', icon:'📊'},
+    ].map(k=>`<div class="kpi-card"><div style="display:flex;align-items:center;justify-content:space-between;"><div class="kpi-label">${k.label}</div><span class="rpt2-kpi-icon">${k.icon}</span></div><div class="kpi-value">${k.value}</div><div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${k.sub}</div></div>`).join('');
+  }
+
+  const revByAxis = {};
+  filtered.forEach(c => { const k = c.axis||'بدون محور'; revByAxis[k] = (revByAxis[k]||0) + (c.total||0); });
+  const revEntries = Object.entries(revByAxis).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const revTotal = revEntries.reduce((s,[,v])=>s+v,0);
+  const revEl = document.getElementById('rpt2-revenue-bars');
+  if (revEl) {
+    revEl.innerHTML = revEntries.length ? revEntries.map(([axis,val])=>{
+      const pct = revTotal ? Math.round(val/revTotal*100) : 0;
+      const active = rpt2SelectedAxes.has(axis);
+      return `<button class="rpt2-bar-row ${active?'active':''}" onclick="toggleRpt2Axis('${escJs(axis)}')">
+        <div class="rpt2-bar-top"><span class="rpt2-bar-label">${esc(axis)}</span><span class="rpt2-bar-val">${fmtN(val)} · ${pct}%</span></div>
+        <div class="bar-track" style="height:8px;"><div class="bar-fill gold" style="width:${pct}%;"></div></div>
+      </button>`;
+    }).join('') : '<div class="db-cards-empty">لا توجد بيانات</div>';
+  }
 
   const arMonthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-  const collectionMap={};
-  paymentsLog.forEach(p=>{
+  const collectionMap = {};
+  paymentsLog.forEach(p => {
     if (!p.date || !p.date.includes('/')) return;
     const parts = p.date.split('/');
-    const m = parseInt(parts[1], 10), y = parts[2];
+    const m = parseInt(parts[1],10), y = parts[2];
     if (!m || !y) return;
     const k = `${y}-${String(m).padStart(2,'0')}`;
-    if (!collectionMap[k]) collectionMap[k] = { total:0, count:0, label: `${arMonthNames[m-1]||m} ${y}` };
+    if (!collectionMap[k]) collectionMap[k] = { total:0, count:0, label: arMonthNames[m-1]||String(m) };
     collectionMap[k].total += p.amount || 0;
     collectionMap[k].count++;
   });
-  const collectionEntries = Object.entries(collectionMap).sort((a,b)=>b[1].total-a[1].total);
-  document.getElementById('rpt-collection-body').innerHTML = collectionEntries.length
-    ? collectionEntries.map(([key,v])=>`<tr><td style="font-weight:500;">${esc(v.label)}</td><td style="text-align:center;">${v.count}</td><td class="amount" style="color:var(--green-acc);font-weight:600;">${fmtN(v.total)}</td></tr>`).join('')
-    : '<tr><td colspan="3" style="text-align:center;color:var(--ink-3);padding:16px;">لا توجد دفعات مسجّلة بعد</td></tr>';
-  renderCollectionChart(collectionMap);
+  const collectionEntries = Object.entries(collectionMap).sort((a,b)=> a[0]<b[0]?-1:1).slice(-12);
+  const maxCollect = Math.max(1, ...collectionEntries.map(([,v])=>v.total));
+  const chartEl = document.getElementById('rpt2-collection-chart');
+  if (chartEl) {
+    chartEl.innerHTML = collectionEntries.length ? collectionEntries.map(([,v])=>{
+      const h = Math.round(v.total/maxCollect*100);
+      return `<div class="rpt2-col-bar-wrap"><div class="rpt2-col-tooltip">${fmtN(v.total)} · ${v.count} دفعة</div><div class="rpt2-col-bar" style="height:${h}%;"></div><div class="rpt2-col-month">${esc(v.label.slice(0,3))}</div></div>`;
+    }).join('') : '<div class="db-cards-empty">لا توجد دفعات مسجّلة بعد</div>';
+  }
 
-  /* ─── OPERATIONS ─── */
-  // "كل شي حالي" — كل أرقام لوحة القيادة التشغيلية تعكس فقط العقود الشغّالة فعلياً اليوم
-  // (بدأت وما انتهت)، تتحدّث تلقائياً كل يوم حسب تاريخ اليوم عند فتح الصفحة — بدون أي تدخّل يدوي
-  const opsToday = new Date(); opsToday.setHours(0,0,0,0);
-  const opsActiveToday = all.filter(c => {
-    const s = parseDate(c.start), e = parseDate(c.end);
-    return (!s || s <= opsToday) && (!e || e >= opsToday);
+  const countEl = document.getElementById('rpt2-fin-count');
+  if (countEl) countEl.textContent = sorted.length;
+  const cardsEl = document.getElementById('rpt2-fin-cards');
+  const emptyEl = document.getElementById('rpt2-fin-empty');
+  if (cardsEl) {
+    if (!sorted.length) {
+      cardsEl.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = 'block';
+    } else {
+      if (emptyEl) emptyEl.style.display = 'none';
+      cardsEl.innerHTML = sorted.map(c => {
+        const paid = c.total - c.rem;
+        const pct = c.total ? Math.round(paid/c.total*100) : 0;
+        const tone = pct===100 ? 'badge-green' : pct>50 ? 'badge-amber' : 'badge-red';
+        return `<div class="db-card rpt2-contract-card" onclick="openRpt2Modal(${c.id})">
+          <div class="rpt2-contract-top">
+            <div><div class="rpt2-contract-client">${esc(c.client||c.hotel)}</div><div class="rpt2-contract-sub">${esc(c.axis)} · #${c.displayId||c.id}</div></div>
+            <span class="badge ${tone}">${pct}%</span>
+          </div>
+          <div class="bar-track" style="height:6px;"><div class="bar-fill gold" style="width:${pct}%;"></div></div>
+          <div class="rpt2-contract-stats">
+            <div class="rpt2-contract-stat"><div class="rpt2-contract-stat-label">إجمالي</div><div class="rpt2-contract-stat-val">${fmtN(c.total)}</div></div>
+            <div class="rpt2-contract-stat"><div class="rpt2-contract-stat-label">مسدد</div><div class="rpt2-contract-stat-val" style="color:var(--green-acc);">${fmtN(paid)}</div></div>
+            <div class="rpt2-contract-stat"><div class="rpt2-contract-stat-label">متبقي</div><div class="rpt2-contract-stat-val" style="color:var(--amber);">${fmtN(c.rem)}</div></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  const expEl = document.getElementById('rpt2-fin-export-body');
+  if (expEl) {
+    expEl.innerHTML = sorted.map(c => {
+      const paid = c.total - c.rem;
+      const pct = c.total ? Math.round(paid/c.total*100) : 0;
+      return `<tr><td>${c.displayId||c.id}</td><td>${esc(c.client||c.hotel)}</td><td>${esc(c.axis)}</td><td>${fmtN(c.total)}</td><td>${fmtN(paid)}</td><td>${fmtN(c.rem)}</td><td>${pct}%</td></tr>`;
+    }).join('');
+  }
+}
+
+window.setRpt2Day = function(day) {
+  rpt2Day = day;
+  ['today','tomorrow','custom'].forEach(d => {
+    const btn = document.getElementById('rpt2-day-'+d);
+    if (btn) btn.classList.toggle('active', d===day);
   });
-  const totalBuses = opsActiveToday.reduce((s,c)=>s+c.buses,0);
-  const totalDays  = opsActiveToday.reduce((s,c)=>s+c.days,0);
-  // فنادق نشطة = فقط العقود اللي فعلاً شغّالة الآن (بدأت وما انتهت) — تستثني العقود المنتهية
-  const activeHotelsCount = new Set(opsActiveToday.filter(c=>c.buses>0).map(c=>c.hotel)).size;
-  // "عقود نشطة" = من ضمن إجمالي العقود بقاعدة البيانات، كم عقد شغّال فعلياً اليوم
-  renderOpsBento(totalBuses, totalDays, opsActiveToday.length, all.length, activeHotelsCount);
+  const dateInput = document.getElementById('rpt2-custom-date');
+  if (dateInput) dateInput.style.display = day==='custom' ? 'inline-block' : 'none';
+  if (day==='custom' && !rpt2CustomDate) {
+    rpt2CustomDate = new Date().toISOString().slice(0,10);
+    if (dateInput) dateInput.value = rpt2CustomDate;
+  }
+  renderOpsReport();
+};
 
-  const axisMap={};
-  opsActiveToday.forEach(c=>{const k=c.axis||'غير محدد';if(!axisMap[k])axisMap[k]={buses:0,days:0,hotels:0};axisMap[k].buses+=c.buses;axisMap[k].days+=c.days;axisMap[k].hotels++;});
-  let aB=0,aD=0,aH=0;
-  document.getElementById('rpt-ops-axis-body').innerHTML = Object.entries(axisMap).sort((a,b)=>b[1].buses-a[1].buses).map(([name,v])=>{aB+=v.buses;aD+=v.days;aH+=v.hotels;const avg=v.hotels>0?Math.round(v.days/v.hotels):0;return`<tr><td style="font-weight:500;">${esc(name)}</td><td style="text-align:center;font-weight:600;color:var(--green-dark);">${v.buses}</td><td style="text-align:center;">${fmtN(v.days)}</td><td style="text-align:center;">${v.hotels}</td><td style="text-align:center;color:var(--ink-3);">${avg}</td></tr>`;}).join('');
-  document.getElementById('rpt-ops-axis-foot').innerHTML = `<tr style="background:var(--sand);font-weight:600;"><td>الإجمالي</td><td style="text-align:center;">${aB}</td><td style="text-align:center;">${fmtN(aD)}</td><td style="text-align:center;">${aH}</td><td></td></tr>`;
-  rptAxisMap = axisMap;
-  renderAxisRace();
+function rpt2ActiveDateObj() {
+  const base = new Date(); base.setHours(0,0,0,0);
+  if (rpt2Day==='tomorrow') { base.setDate(base.getDate()+1); return base; }
+  if (rpt2Day==='custom' && rpt2CustomDate) { const d = new Date(rpt2CustomDate); d.setHours(0,0,0,0); return d; }
+  return base;
+}
 
-  const pts=[{point:'غرب الجمرات',buses:7,contracts:3},{point:'منطقة 4',buses:1,contracts:2},{point:'منطقة 2',buses:0,contracts:1},{point:'منطقة 3',buses:0,contracts:1},{point:'منطقة 5',buses:0,contracts:1},{point:'منطقة 6',buses:0,contracts:1}];
-  document.getElementById('rpt-ops-points-body').innerHTML = pts.map(p=>`<tr><td style="font-weight:500;">${p.point}</td><td style="text-align:center;font-weight:600;color:var(--green-dark);">${p.buses}</td><td style="text-align:center;">${p.contracts}</td></tr>`).join('');
-  renderPointsDonut(pts);
+function renderOpsReport() {
+  const all = contracts;
+  const activeDate = rpt2ActiveDateObj();
+  const inRange = c => {
+    const s = parseDate(c.start), e = parseDate(c.end);
+    return (!s || s <= activeDate) && (!e || e >= activeDate);
+  };
+  const activeToday = all.filter(inRange);
 
-  document.getElementById('rpt-ops-contracts-body').innerHTML = opsActiveToday.map(c=>`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td style="font-size:12px;">${esc(c.axis)}</td><td style="font-size:12px;">عادي</td><td style="font-size:12px;">${esc(c.carrier)}</td><td style="text-align:center;font-weight:600;">${c.buses||'—'}</td><td style="font-size:12px;">${c.start}</td><td style="font-size:12px;">${c.end}</td><td style="text-align:center;">${c.days}</td><td class="amount">${c.price?fmtN(c.price):'—'}</td></tr>`).join('');
-  renderOpsContractCards(opsActiveToday);
+  const dateEl = document.getElementById('rpt2-active-date');
+  if (dateEl) dateEl.textContent = activeDate.toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  /* ─── ALERTS ─── */
-  const defaulted  = all.filter(c=>c.status==='متعثر'||c.status==='تعثر متوقع');
-  const highRem    = all.filter(c=>c.total>0&&c.rem/c.total>0.5&&c.rem>0);
-  const notStarted = all.filter(c=>c.status==='لم يبدأ');
-  const noPricing  = all.filter(c=>!c.price||c.price===0);
+  const totalBuses = activeToday.reduce((s,c)=>s+(c.buses||0),0);
+  const activeAxes = new Set(activeToday.map(c=>c.axis).filter(Boolean));
+  const activeHotels = new Set(activeToday.filter(c=>c.buses>0).map(c=>c.hotel));
 
-  document.getElementById('rpt-alert-kpis').innerHTML =
-    miniKpi('متعثرون',    defaulted.length,  defaulted.length>0?'alert':'default') +
-    miniKpi('متبقي > 50%',highRem.length,    highRem.length>0?'warn':'default') +
-    miniKpi('لم تبدأ',    notStarted.length, notStarted.length>0?'warn':'default') +
-    miniKpi('بدون تسعير', noPricing.length,  noPricing.length>0?'warn':'default');
+  const kpiEl = document.getElementById('rpt2-ops-kpis');
+  if (kpiEl) {
+    kpiEl.innerHTML = [
+      {label:'حافلات نشطة', value: totalBuses.toLocaleString(), icon:'🚌'},
+      {label:'عقود نشطة', value: activeToday.length.toLocaleString(), icon:'📈'},
+      {label:'فنادق نشطة', value: activeHotels.size.toLocaleString(), icon:'💰'},
+      {label:'محاور مغطاة', value: activeAxes.size.toLocaleString(), icon:'📊'},
+    ].map(k=>`<div class="kpi-card"><div style="display:flex;align-items:center;justify-content:space-between;"><div class="kpi-label">${k.label}</div><span class="rpt2-kpi-icon">${k.icon}</span></div><div class="kpi-value">${k.value}</div></div>`).join('');
+  }
 
-  const empty = (n) => `<tr><td colspan="${n}" style="text-align:center;padding:20px;color:var(--ink-3);">لا توجد سجلات ✓</td></tr>`;
+  const axisMap = {};
+  activeToday.forEach(c => { const k=c.axis||'بدون محور'; if(!axisMap[k]) axisMap[k]={buses:0,hotels:new Set()}; axisMap[k].buses+=(c.buses||0); if(c.hotel) axisMap[k].hotels.add(c.hotel); });
+  const axisEntries = Object.entries(axisMap).filter(([,v])=>v.buses>0).sort((a,b)=>b[1].buses-a[1].buses);
+  const maxBus = Math.max(1, ...axisEntries.map(([,v])=>v.buses));
+  const raceEl = document.getElementById('rpt2-axis-race');
+  if (raceEl) {
+    raceEl.innerHTML = axisEntries.length ? axisEntries.map(([axis,v])=>{
+      const pct = Math.round(v.buses/maxBus*100);
+      const open = rpt2SelectedAxes.has('ops:'+axis);
+      const hotelsForAxis = activeToday.filter(c => (c.axis||'بدون محور')===axis);
+      return `<div class="rpt2-axis-block">
+        <button class="rpt2-bar-row" onclick="toggleRpt2OpsAxis('${escJs(axis)}')" style="width:100%;">
+          <div class="rpt2-bar-top">
+            <span class="rpt2-bar-label">🚌 ${esc(axis)} <span class="badge badge-green" style="margin-right:6px;">${v.hotels.size} فندق نشط</span></span>
+            <span class="rpt2-bar-val">${v.buses} حافلة</span>
+          </div>
+          <div class="bar-track" style="height:10px;"><div class="bar-fill gold" style="width:${pct}%;"></div></div>
+        </button>
+        ${open ? `<div class="rpt2-axis-hotels">
+          <div class="rpt2-axis-hotels-head"><span>الفنادق النشطة في ${esc(axis)}</span><span>${hotelsForAxis.length}</span></div>
+          ${hotelsForAxis.length ? `<div class="table-wrap"><table><thead><tr><th>الفندق</th><th>العميل</th><th>نقطة الفرز</th><th>الحافلات</th><th>البداية</th><th>النهاية</th></tr></thead><tbody>
+            ${hotelsForAxis.map(h=>`<tr><td style="font-weight:600;">${esc(h.hotel)}</td><td style="color:var(--ink-3);">${esc(h.client)||'—'}</td><td style="color:var(--ink-3);">${esc(h.point)||'—'}</td><td style="text-align:center;font-weight:600;">${h.buses||'—'}</td><td style="font-size:11px;">${h.start||'—'}</td><td style="font-size:11px;">${h.end||'—'}</td></tr>`).join('')}
+          </tbody></table></div>` : `<div style="padding:16px;text-align:center;font-size:12px;color:var(--ink-3);">لا فنادق نشطة بهذا التاريخ</div>`}
+        </div>` : ''}
+      </div>`;
+    }).join('') : '<div class="db-cards-empty">لا توجد بيانات تشغيلية لهذا اليوم</div>';
+  }
+}
 
-  document.getElementById('rpt-defaulted-body').innerHTML = defaulted.length ? defaulted.map(c=>{const paid=c.total-c.rem,p=c.total>0?Math.round(paid/c.total*100):0;return`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td>${esc(c.axis)}</td><td>${esc(c.carrier)}</td><td class="amount">${fmtN(c.total)}</td><td class="amount" style="color:var(--green-acc);">${fmtN(paid)}</td><td class="amount" style="color:var(--red);font-weight:500;">${fmtN(c.rem)}</td><td>${pctBar(p)}</td></tr>`;}).join('') : empty(8);
+function renderAlertsReport() {
+  const all = contracts;
+  const zeroPaid = all.filter(c => c.total>0 && (c.total-c.rem)===0);
+  const highRem = all.filter(c => c.total>0 && (c.rem/c.total)>0.5);
+  const fullyPaid = all.filter(c => c.total>0 && c.rem===0);
+  const noPricing = all.filter(c => !c.total || c.total===0);
 
-  document.getElementById('rpt-highrem-body').innerHTML = highRem.length ? highRem.map(c=>{const remPct=Math.round(c.rem/c.total*100);return`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td>${esc(c.axis)}</td><td class="amount">${fmtN(c.total)}</td><td class="amount" style="color:var(--amber);font-weight:500;">${fmtN(c.rem)}</td><td>${pctBar(remPct)}</td><td style="font-size:12px;">${c.end}</td></tr>`;}).join('') : empty(7);
+  const box = (title, tone, items) => {
+    const bg = tone==='red' ? 'background:var(--red-light);color:#8B1A1A;' : tone==='amber' ? 'background:var(--amber-light);color:#7A4D00;' : tone==='blue' ? 'background:#E6F1FB;color:#0C447C;' : 'background:var(--gold-light);color:var(--green-dark);';
+    return `<div class="card">
+      <div class="rpt2-alertbox-head" style="${bg}">
+        <span style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">⚠️ ${title}</span>
+        <span class="rpt2-alertbox-count">${items.length}</span>
+      </div>
+      ${items.length===0 ? `<div style="padding:24px;text-align:center;font-size:12px;color:var(--ink-3);">لا عناصر</div>` :
+        items.map(c => `<button class="rpt2-alertbox-item" onclick="openRpt2Modal(${c.id})">${esc(c.client||c.hotel)} — ${fmtN((c.total||0) - (c.rem||0))} ر.س مسدد</button>`).join('')}
+    </div>`;
+  };
 
-  document.getElementById('rpt-notstarted-body').innerHTML = notStarted.length ? notStarted.map(c=>`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td>${esc(c.axis)}</td><td style="font-size:12px;">${c.start}</td><td style="font-size:12px;">${c.end}</td><td style="text-align:center;">${c.buses||'—'}</td><td class="amount">${c.total?fmtN(c.total):'—'}</td></tr>`).join('') : empty(7);
+  const el = document.getElementById('rpt2-alerts-grid');
+  if (el) {
+    el.innerHTML =
+      box('المتعثرون (سداد 0%)', 'red', zeroPaid) +
+      box('متبقي > 50%', 'amber', highRem) +
+      box('مسدد بالكامل', 'blue', fullyPaid) +
+      box('بدون تسعير', 'gold', noPricing);
+  }
+}
 
-  document.getElementById('rpt-nopricing-body').innerHTML = noPricing.length ? noPricing.map(c=>`<tr><td style="color:var(--ink-3);font-size:12px;">${c.displayId || c.id}</td><td><div class="hotel-name">${esc(c.client||c.hotel)}</div><div class="hotel-sub">${esc(c.hotel)}</div></td><td>${esc(c.axis)}</td><td>${esc(c.carrier)}</td><td style="font-size:12px;">${c.start}</td><td style="font-size:12px;">${c.end}</td><td style="text-align:center;">${c.days}</td></tr>`).join('') : empty(7);
+window.openRpt2Modal = function(id) {
+  const c = contracts.find(x => x.id === id);
+  if (!c) return;
+  rpt2ModalContractId = id;
+  const paid = c.total - c.rem;
+  const pct = c.total ? Math.round(paid/c.total*100) : 0;
+  const tone = pct===100?'badge-green':pct>50?'badge-amber':'badge-red';
+  document.getElementById('rpt2-modal-client').textContent = c.client || c.hotel || '—';
+  document.getElementById('rpt2-modal-id').textContent = '#' + (c.displayId||c.id);
+  document.getElementById('rpt2-modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <span class="badge badge-gray">${esc(c.axis)}</span>
+      <span class="badge ${tone}">${pct}% مسدد</span>
+    </div>
+    <div class="bar-track" style="height:10px;margin-bottom:16px;"><div class="bar-fill gold" style="width:${pct}%;"></div></div>
+    <div class="rpt2-contract-stats" style="margin-bottom:16px;">
+      <div class="rpt2-contract-stat"><div class="rpt2-contract-stat-label">إجمالي</div><div class="rpt2-contract-stat-val">${fmtN(c.total)}</div></div>
+      <div class="rpt2-contract-stat"><div class="rpt2-contract-stat-label">مسدد</div><div class="rpt2-contract-stat-val" style="color:var(--green-acc);">${fmtN(paid)}</div></div>
+      <div class="rpt2-contract-stat"><div class="rpt2-contract-stat-label">متبقي</div><div class="rpt2-contract-stat-val" style="color:var(--amber);">${fmtN(c.rem)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;border-top:1px solid var(--border);padding-top:14px;">
+      <div><span style="color:var(--ink-3);">الفندق:</span> <strong>${esc(c.hotel)||'—'}</strong></div>
+      <div><span style="color:var(--ink-3);">عدد الحافلات:</span> <strong>${c.buses||'—'}</strong></div>
+      <div><span style="color:var(--ink-3);">البداية:</span> <strong>${esc(c.start)||'—'}</strong></div>
+      <div><span style="color:var(--ink-3);">النهاية:</span> <strong>${esc(c.end)||'—'}</strong></div>
+    </div>`;
+  document.getElementById('rpt2-contract-modal').classList.add('open');
+};
+window.closeRpt2Modal = function() {
+  document.getElementById('rpt2-contract-modal').classList.remove('open');
+};
+
+window.renderReports = function() {
+  renderFinReport();
+  renderOpsReport();
+  renderAlertsReport();
 };
 
 // refresh reports when tab opens
@@ -6327,21 +6426,20 @@ window.renderAuditLog = function() {
     return;
   }
   if (empty) empty.style.display = 'none';
-  if (tbody) tbody.innerHTML = filtered.map((e,i) => `
-    <tr>
-      <td style="color:var(--ink-3);font-size:12px;">${filtered.length - i}</td>
-      <td style="font-size:12px;white-space:nowrap;color:var(--ink-3);">${e.ts}</td>
-      <td>
-        <div style="display:inline-flex;align-items:center;gap:6px;">
-          <div style="width:26px;height:26px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--green-dark);flex-shrink:0;">${esc(e.user.charAt(0))}</div>
-          <span style="font-size:13px;font-weight:500;">${esc(e.user)}</span>
+  if (tbody) tbody.innerHTML = filtered.map((e) => `
+    <div class="audit-feed-item">
+      <div class="audit-feed-icon" style="background:var(--green-light);color:var(--green-dark);">${esc(e.user.charAt(0))}</div>
+      <div class="audit-feed-main">
+        <div class="audit-feed-top">
+          <span class="audit-feed-user">${esc(e.user)}</span>
+          <span class="badge ${auditTypeBadge[e.type]||'badge-gray'}">${esc(e.type)}</span>
+          ${e.hotel && e.hotel !== '—' ? `<span style="font-size:11.5px;color:var(--ink-3);">${esc(e.hotel)} · عقد #${e.contractId}</span>` : ''}
+          <span class="audit-feed-time">${e.ts}</span>
         </div>
-      </td>
-      <td><span class="badge ${auditTypeBadge[e.type]||'badge-gray'}">${esc(e.type)}</span></td>
-      <td><div class="hotel-name">${esc(e.hotel)}</div><div class="hotel-sub">عقد #${e.contractId}</div></td>
-      <td style="font-size:12px;color:var(--ink-2);max-width:300px;">${esc(e.details)}</td>
-      <td style="font-size:12px;color:var(--ink-3);">${esc(e.note)||'—'}</td>
-    </tr>`).join('');
+        <div class="audit-feed-details">${esc(e.details)}</div>
+        ${e.note ? `<div class="audit-feed-meta">${esc(e.note)}</div>` : ''}
+      </div>
+    </div>`).join('');
 };
 
 window.clearAuditFilter = function() {
@@ -6752,11 +6850,11 @@ function renderDetailSchedule(id) {
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead>
           <tr style="background:var(--sand);">
-            <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);">#</th>
-            <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);">تاريخ الاستحقاق</th>
-            <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);">المبلغ</th>
-            <th style="padding:8px 12px;text-align:right;font-weight:500;color:var(--ink-3);">الحالة</th>
-            <th style="padding:8px 12px;"></th>
+            <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">#</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">تاريخ الاستحقاق</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">المبلغ</th>
+            <th style="padding:10px 12px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">الحالة</th>
+            <th style="padding:10px 12px;background:var(--sand);"></th>
           </tr>
         </thead>
         <tbody>
@@ -6771,15 +6869,15 @@ function renderDetailSchedule(id) {
             const remainOnRow = r.amount - paidAmt;
             return `
             <tr style="border-top:1px solid var(--border);${isPaid?'opacity:0.7':''}">
-              <td style="padding:8px 12px;color:var(--ink-3);">الدفعة ${r.num}</td>
-              <td style="padding:8px 12px;font-weight:500;">${r.dueDate}
+              <td style="padding:10px 12px;color:var(--ink-3);">الدفعة ${r.num}</td>
+              <td style="padding:10px 12px;font-weight:500;">${r.dueDate}
                 <button onclick="editInstalmentDate(${id},${i})" title="تعديل تاريخ الاستحقاق"
                   style="margin-right:4px;border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--ink-3);padding:0;">✏️</button>
               </td>
-              <td style="padding:8px 12px;font-weight:600;color:var(--green-dark);">${r.amount.toLocaleString()} ر
+              <td style="padding:10px 12px;font-weight:600;color:var(--green-dark);">${r.amount.toLocaleString()} ر
                 ${isPartial ? `<div style="font-size:10px;color:#0C447C;font-weight:500;margin-top:2px;">سُدِّد ${paidAmt.toLocaleString()} · باقٍ ${remainOnRow.toLocaleString()}</div>` : ''}
               </td>
-              <td style="padding:8px 12px;">
+              <td style="padding:10px 12px;">
                 <span style="font-size:11px;padding:2px 8px;border-radius:10px;
                   background:${statusBg};color:${statusColor};font-weight:500;">${statusLabel}</span>
               </td>
@@ -6793,10 +6891,10 @@ function renderDetailSchedule(id) {
             </tr>`;
           }).join('')}
           <tr style="background:var(--sand);border-top:2px solid var(--border);">
-            <td colspan="2" style="padding:8px 12px;font-weight:600;color:var(--green-dark);">
+            <td colspan="2" style="padding:10px 12px;font-weight:600;color:var(--green-dark);">
               الإجمالي · ${paidCount}/${sched.length} مسددة
             </td>
-            <td style="padding:8px 12px;font-weight:700;color:var(--green-dark);">${totalAmt.toLocaleString()} ر</td>
+            <td style="padding:10px 12px;font-weight:700;color:var(--green-dark);">${totalAmt.toLocaleString()} ر</td>
             <td colspan="2"></td>
           </tr>
         </tbody>
@@ -9433,11 +9531,11 @@ function contractScheduleDetailHtml(c, ctx) {
     <div style="overflow:hidden;border:1px solid var(--border);border-radius:8px;margin-bottom:${leftCount > 0 ? '10px' : '0'};">
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead><tr style="background:var(--sand);">
-          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);">الدفعة</th>
-          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);">الاستحقاق</th>
-          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);">المبلغ</th>
-          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);">المسدّد</th>
-          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);">الحالة</th>
+          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">الدفعة</th>
+          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">الاستحقاق</th>
+          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">المبلغ</th>
+          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">المسدّد</th>
+          <th style="padding:7px 10px;text-align:right;font-weight:500;color:var(--ink-3);background:var(--sand);">الحالة</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -9857,26 +9955,25 @@ window.renderPaymentsLogAll = function() {
     return (b.pid || 0) - (a.pid || 0);
   });
   box.innerHTML = `
-  <div class="table-wrap" style="max-height:480px;overflow-y:auto;">
-    <table>
-      <thead><tr><th>التاريخ</th><th>العميل</th><th>العقد</th><th>المبلغ</th><th>الطريقة</th><th>ملاحظة</th><th></th></tr></thead>
-      <tbody>${list.map(p => {
-        const c = contracts.find(x => x.id === p.contractId);
-        return `
-        <tr>
-          <td style="font-size:12px;white-space:nowrap;">${p.date}</td>
-          <td style="font-size:12.5px;">${c ? esc(c.client || c.hotel) : '—'}</td>
-          <td style="font-size:12px;color:var(--ink-3);">#${p.contractId}${c ? ' · ' + esc(c.hotel) : ''}</td>
-          <td class="amount" style="font-weight:600;color:var(--green-dark);">${payFmt(p.amount)} ر</td>
-          <td style="font-size:12px;">${esc(p.method)}</td>
-          <td style="font-size:12px;color:var(--ink-3);">${esc(p.note)||'—'}</td>
-          <td style="white-space:nowrap;">
-            <button class="edit-btn" onclick="editPayment(${p.pid})" title="تعديل المبلغ والتاريخ">✏️</button>
-            <button class="del-btn" onclick="deletePayment(${p.pid})" title="حذف">حذف</button>
-          </td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>
+  <div class="pay-log-list" style="max-height:480px;overflow-y:auto;">
+    ${list.map(p => {
+      const c = contracts.find(x => x.id === p.contractId);
+      return `
+      <div class="pay-log-card">
+        <div class="pay-log-main">
+          <div class="pay-log-top">
+            <span class="pay-log-client">${c ? esc(c.client || c.hotel) : '—'}</span>
+            <span class="pay-log-amount">${payFmt(p.amount)} ر</span>
+          </div>
+          <div class="pay-log-sub">#${p.contractId}${c ? ' · ' + esc(c.hotel) : ''} · ${esc(p.method)} · ${p.date}</div>
+          ${p.note ? `<div class="pay-log-note">${esc(p.note)}</div>` : ''}
+        </div>
+        <div class="pay-log-actions">
+          <button class="edit-btn" onclick="editPayment(${p.pid})" title="تعديل المبلغ والتاريخ">✏️</button>
+          <button class="del-btn" onclick="deletePayment(${p.pid})" title="حذف">حذف</button>
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
 };
 
