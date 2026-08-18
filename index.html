@@ -124,6 +124,8 @@
   }
   .nav-divider { display: none; }
   .nav-icon { display: inline-block; position: relative; top: 2px; font-size: 14px; }
+  .nav-section-label { display: none; }
+  .nav-footer-profile { display: none; }
 
   /* زر طي/فتح القائمة الجانبية — يظهر فقط على شاشات الكمبيوتر (داخل الميديا كويري بالأسفل) */
   #sidebar-toggle {
@@ -180,6 +182,32 @@
       border-right-color: var(--gold);
     }
     .nav-divider { display: block; height: 1px; background: rgba(255,255,255,.12); margin: 10px 6px; }
+    .nav-section-label {
+      display: block; padding: 14px 10px 6px; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.35);
+    }
+    .nav-section-label:first-child { padding-top: 4px; }
+    .nav-footer-profile {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: auto; margin-inline: 6px; margin-bottom: 6px;
+      padding: 10px; border-radius: 10px; background: rgba(255,255,255,.06);
+      flex-shrink: 0;
+    }
+    .nav-footer-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: var(--gradient-gold, var(--gold)); color: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .nav-footer-info { flex: 1; min-width: 0; }
+    .nav-footer-name { font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-footer-email { font-size: 10.5px; color: rgba(255,255,255,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-footer-logout {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 8px; border: none;
+      background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); cursor: pointer;
+      font-size: 13px; transition: background .15s;
+    }
+    .nav-footer-logout:hover { background: rgba(227,103,103,.25); color: #F0A3A3; }
 
     /* حالة الطي — القائمة تختفي والزر العائم يرجعها */
     body.sidebar-collapsed nav { width: 0; padding-right: 0; padding-left: 0; }
@@ -187,6 +215,25 @@
     body.sidebar-collapsed #page-reports { margin-right: 0; }
     #sidebar-toggle { display: flex; }
     body.sidebar-collapsed #sidebar-toggle { right: 12px; }
+  }
+
+  /* درج المهام — انتقال ناعم (شريط ينزلق من اليمين + خلفية تتلاشى) بدل الظهور المفاجئ.
+     خارج الميديا كويري عمدًا عشان يشتغل بكل أحجام الشاشات (الجوال والكمبيوتر). */
+  #tasks-drawer-backdrop {
+    display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 209;
+    opacity: 0; pointer-events: none; transition: opacity .28s ease;
+  }
+  #tasks-drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+  #tasks-fab-panel {
+    display: flex !important;
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform .32s cubic-bezier(.16,1,.3,1), visibility 0s linear .32s;
+  }
+  #tasks-fab-panel.open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform .32s cubic-bezier(.16,1,.3,1), visibility 0s linear 0s;
   }
 
   /* ── LAYOUT ── */
@@ -555,7 +602,7 @@
     vertical-align: middle;
     transition: background .12s;
   }
-  tbody tr:nth-child(even) td { background: oklch(32% .03 65); }
+  tbody tr:nth-child(even) td { background: oklch(98% .006 70); }
   tr:hover td { background: var(--gold-light); }
   tr:last-child td { border-bottom: none; }
 
@@ -1171,48 +1218,10 @@
   /* overflow-anchor:none يمنع المتصفح من "تعويض" التمرير تلقائياً لما تتغيّر
      أحجام العناصر (حلقات النِسَب المتحركة، لوحات التفصيل...) — هذا هو سبب
      نزول السكرول المفاجئ عند الضغط على بطاقات المعلومات */
-  /* الوضع الداكن — كان مقتصرًا على صفحة التقارير فقط، الآن مطبّق على الموقع كامل.
-     يعيد تعريف نفس متغيرات الألوان الأساسية (oklch) على مستوى body، فتنعكس تلقائيًا
-     على كل مكوّن يستخدمها (بطاقات، جداول، مودالات، نماذج) بدون لمس كل عنصر يدويًا. */
-  body {
-    --white:       oklch(22% .008 40);
-    --sand:        oklch(26% .008 40);
-    --ink:         oklch(96% .01 75);
-    --ink-2:       oklch(85% .012 65);
-    --ink-3:       oklch(70% .015 60);
-    --border:      oklch(100% 0 0 / .08);
-    --green-dark:  oklch(94% .02 75);
-    --green-acc:   oklch(68% .075 65);
-    --gold:        oklch(68% .075 65);
-    --green-light: oklch(68% .075 65 / .16);
-    --gold-light:  oklch(68% .075 65 / .22);
-    --amber-light: oklch(75% .13 65 / .18);
-    --red-light:   oklch(55% .19 25 / .18);
-  }
-  /* الهيدر والشريط الجانبي يستخدمان --green-dark/--white بمعنى مختلف (لون خلفية العلامة
-     التجارية الغامق أصلاً) — نعيدهما لقيمتيهما الأصليتين هنا فقط، بمعزل عن الوضع الداكن أعلاه */
-  header, nav, #sidebar-toggle {
-    --green-dark: oklch(28% .008 40);
-    --white: #FFFFFF;
-  }
-  /* شاشة تسجيل الدخول/إنشاء الحساب تبقى بشكلها الفاتح الأصلي كما هي — أول شاشة يشوفها أي
-     مستخدم قبل الدخول، منفصلة تمامًا عن "صفحات" الموقع الداخلية اللي يخصّها الوضع الداكن */
-  #auth-screen {
-    --white: #FFFFFF;
-    --sand: oklch(98% .008 70);
-    --ink: oklch(22% .01 40);
-    --ink-2: oklch(38% .012 45);
-    --ink-3: oklch(50% .015 55);
-    --border: oklch(90% .015 70);
-    --green-dark: oklch(28% .008 40);
-    --green-light: oklch(92% .028 75);
-    --gold-light: oklch(92% .028 75);
-    --amber-light: oklch(94% .035 60);
-    --red-light: oklch(93% .04 25);
-  }
+  /* صفحات الموقع فاتحة كلها (بما فيها التقارير) — الشريط الجانبي والهيدر يبقون غامقين
+     كما هم دائمًا، بمعزل تام عن لون محتوى الصفحات */
   #page-reports {
     overflow-anchor: none;
-    background: linear-gradient(165deg, oklch(16% .008 40) 0%, oklch(20% .008 40) 45%, oklch(24% .008 40) 100%);
     border-radius: 0;
     box-shadow: none;
     max-width: none;
@@ -1221,24 +1230,9 @@
   }
   /* إفساح مكان للقائمة الجانبية على شاشات الكمبيوتر */
   @media (min-width: 901px) {
-    .page { margin-right: 190px; }
+    .page { margin-right: 190px; max-width: none; width: auto; }
     #page-reports { margin-right: 190px; width: auto; }
   }
-  #page-reports .rpt-shell { box-shadow:none; }
-  tr:hover td { background: rgba(255,255,255,.045); }
-  .badge-green { background: rgba(184,144,100,.22); color:#E7D2AE; }
-  .badge-amber { background: rgba(240,182,92,.2);  color:#F3C57E; }
-  .badge-red   { background: rgba(227,103,103,.2); color:#F0A3A3; }
-  .badge-gray  { background: rgba(255,255,255,.1); color:#CFC7B8; }
-  .badge-blue  { background: rgba(140,180,220,.22);color:#B7D6F0; }
-  .db-tab { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: rgba(255,255,255,.65); }
-  .db-tab:hover { background: rgba(255,255,255,.11); }
-  .db-tab.active { background: var(--gold); color:#3A2800; border-color: var(--gold); font-weight:600; }
-  .rpt-race-fill { background: linear-gradient(90deg, #6B5636, var(--gold)); color:#3A2800; }
-  .btn-sm:not(.export-xls):not(.export-pdf):not(.btn-primary) { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.75); }
-  .btn-sm:not(.export-xls):not(.export-pdf):not(.btn-primary):hover { background: rgba(255,255,255,.12); }
-  .btn-primary { color: #3A2800; }
-  th { background: rgba(255,255,255,.05); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -1342,37 +1336,78 @@
 
 <!-- NAV -->
 <nav>
+  <div class="nav-section-label">العمليات</div>
   <button class="nav-btn" data-nav="contracts" onclick="showPage('contracts', this)"><span class="nav-icon">📄</span> العقود</button>
   <button class="nav-btn" data-nav="operations" onclick="showPage('operations', this)"><span class="nav-icon">🚌</span> التشغيل</button>
   <button class="nav-btn" data-nav="payments" onclick="showPage('payments', this); requestAnimationFrame(()=>{renderActivePayments(); renderSettlement(); renderClientBalances(); renderPaymentsLogAll(); populateInvoiceContractSelect();});"><span class="nav-icon">💳</span> الدفعات</button>
   <button class="nav-btn" data-nav="alerts" onclick="showPage('alerts', this)"><span class="nav-icon">🔔</span> التنبيهات</button>
   <button class="nav-btn active" data-nav="reports" onclick="showPage('reports', this)"><span class="nav-icon">📊</span> التقارير</button>
   <button class="nav-btn" data-nav="database" onclick="showPage('database', this)"><span class="nav-icon">🗄</span> قاعدة البيانات</button>
-  <div class="nav-divider"></div>
+  <div class="nav-section-label" id="nav-admin-label">الإدارة</div>
   <button class="nav-btn" data-nav="users" onclick="showPage('users', this)" style="color:var(--green-acc);display:none;"><span class="nav-icon">👥</span> المستخدمون</button>
   <button class="nav-btn" data-nav="auditlog" onclick="showPage('auditlog', this)" style="color:var(--amber);"><span class="nav-icon">🕐</span> سجل التعديلات</button>
+
+  <div class="nav-footer-profile" id="nav-footer-profile">
+    <div class="nav-footer-avatar" id="nav-footer-avatar">؟</div>
+    <div class="nav-footer-info">
+      <div class="nav-footer-name" id="nav-footer-name">—</div>
+      <div class="nav-footer-email" id="nav-footer-email">—</div>
+    </div>
+    <button class="nav-footer-logout" onclick="event.stopPropagation();doLogout()" title="تسجيل الخروج">🚪</button>
+  </div>
 </nav>
 
 <!-- زر طي/فتح القائمة الجانبية -->
 <button id="sidebar-toggle" onclick="window.toggleSidebar()" title="طي/فتح القائمة الجانبية">◀</button>
 
 <!-- زر المهام العائم — أيقونة صغيرة بالزاوية تفتح لوحة مصغّرة بدل صفحة كاملة -->
-<button id="tasks-fab" data-nav="tasks" onclick="window.toggleTasksFab()" title="المهام" style="
-  position:fixed; bottom:22px; left:22px; width:52px; height:52px; border-radius:50%;
-  background:var(--gold); color:#fff; border:none; box-shadow:0 6px 18px rgba(0,0,0,.25);
-  font-size:21px; cursor:pointer; z-index:210; display:none; align-items:center; justify-content:center;">
-  📋
-  <span id="tasks-fab-badge" style="display:none;position:absolute;top:-3px;left:-3px;min-width:18px;height:18px;padding:0 5px;background:var(--red);color:#fff;border-radius:9px;font-size:10.5px;font-weight:700;align-items:center;justify-content:center;"></span>
+<button id="tasks-fab" data-nav="tasks" onclick="window.toggleTasksFab()" title="التنبيهات والمهام" style="
+  position:fixed; bottom:22px; left:22px; width:56px; height:56px; border-radius:50%;
+  background:var(--gradient-gold, var(--gold)); color:var(--ink); border:none; box-shadow:var(--shadow-gold);
+  cursor:pointer; z-index:210; display:none; align-items:center; justify-content:center;
+  transition:transform .15s;">
+  <svg width="28" height="28" viewBox="0 0 24 24" style="filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));">
+    <defs>
+      <linearGradient id="bell3dGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FFF6E0"/>
+        <stop offset="45%" stop-color="#3A2800"/>
+        <stop offset="100%" stop-color="#1E1500"/>
+      </linearGradient>
+      <linearGradient id="bell3dShine" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".9"/>
+        <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#bell3dGrad)" d="M12 2c-1.1 0-2 .9-2 2v.29C7.36 5.13 5.5 7.65 5.5 10.6v4.55L3.6 17.6c-.3.4 0 1 .5 1h15.8c.5 0 .8-.6.5-1l-1.9-2.45V10.6c0-2.95-1.86-5.47-4.5-6.31V4c0-1.1-.9-2-2-2z"/>
+    <path fill="url(#bell3dShine)" d="M9.2 5.6c-1.5 1-2.5 2.8-2.5 5v2.3L8 10.3V8.9c0-1.6.6-2.9 1.6-3.8-.13.17-.27.33-.4.5z"/>
+    <path fill="url(#bell3dGrad)" d="M9.3 19c0 1.5 1.2 2.7 2.7 2.7s2.7-1.2 2.7-2.7H9.3z"/>
+  </svg>
+  <span id="tasks-fab-badge" style="display:none;position:absolute;top:-2px;left:-2px;min-width:20px;height:20px;padding:0 5px;background:var(--red);color:#fff;border-radius:10px;font-size:10.5px;font-weight:700;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--white);"></span>
 </button>
+<div id="tasks-drawer-backdrop" onclick="window.toggleTasksFab(false)"></div>
 <div id="tasks-fab-panel" style="
-  display:none; flex-direction:column; position:fixed; bottom:84px; left:22px; width:340px; max-height:440px;
-  background:var(--white); border:1px solid var(--border); border-radius:14px;
-  box-shadow:0 16px 40px rgba(0,0,0,.22); z-index:210; overflow:hidden;">
-  <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-    <div style="font-size:13px;font-weight:600;color:var(--ink);">📋 المهام</div>
-    <button class="btn-sm" onclick="window.openTasksFullPage()" style="font-size:11px;padding:4px 10px;">فتح الصفحة</button>
+  flex-direction:column; position:fixed; top:0; bottom:0; right:0; width:400px; max-width:92vw;
+  background:var(--white); border-left:1px solid var(--border);
+  box-shadow:-16px 0 40px rgba(0,0,0,.18); z-index:210; overflow:hidden;">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div style="font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;">📋 التنبيهات والمهام</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn-sm" id="task-add-btn" onclick="window.openTaskModal()" style="background:var(--gold);border-color:var(--gold);color:#fff;font-weight:500;display:none;">+ جديدة</button>
+      <button class="modal-close" onclick="window.toggleTasksFab(false)">✕</button>
+    </div>
   </div>
-  <div id="tasks-fab-list" style="padding:10px 12px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;"></div>
+  <div id="tasks-drawer" style="display:flex;gap:6px;padding:14px 20px 0;flex-shrink:0;">
+    <button class="db-tab active" id="ttab-mine" onclick="showTasksTab('mine',this)">📥 المُسندة لي</button>
+    <button class="db-tab" id="ttab-created" onclick="showTasksTab('created',this)">📤 التي أنشأتها</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:14px 20px 20px;">
+    <div id="tpanel-mine">
+      <div id="tasks-mine-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <div id="tpanel-created" style="display:none;">
+      <div id="tasks-created-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
 </div>
 
 
@@ -1612,91 +1647,49 @@
       <div class="card">
         <div class="card-head" style="background:#E6F1FB;color:#0C447C;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-start-today-list', this)">
           <span>🔵 عقود تبدأ اليوم <span id="alerts-start-today-count" style="font-weight:700;"></span></span>
-          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;transform:rotate(180deg);">▾</span>
         </div>
-        <div id="alerts-start-today-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
+        <div id="alerts-start-today-list" style="display:flex;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
       <div class="card">
         <div class="card-head" style="background:var(--red-light);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-end-today-list', this)">
           <span>⏹ عقود تنتهي اليوم <span id="alerts-end-today-count" style="font-weight:700;"></span></span>
-          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;transform:rotate(180deg);">▾</span>
         </div>
-        <div id="alerts-end-today-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
+        <div id="alerts-end-today-list" style="display:flex;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
       <div class="card">
         <div class="card-head" style="background:var(--amber-light);color:var(--amber);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-start-tomorrow-list', this)">
           <span>🟡 عقود تبدأ غداً <span id="alerts-start-tomorrow-count" style="font-weight:700;"></span></span>
-          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;transform:rotate(180deg);">▾</span>
         </div>
-        <div id="alerts-start-tomorrow-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
+        <div id="alerts-start-tomorrow-list" style="display:flex;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
     </div>
 
     <div style="margin-bottom:12px;">
-      <input class="form-input" id="alerts-client-filter" type="text" placeholder="🔍 فلترة العملاء المتعثرين والعقود المحتاجة متابعة بالاسم..." oninput="renderAlerts()" style="max-width:360px;">
+      <input class="form-input" id="alerts-client-filter" type="text" placeholder="🔍 فلترة العقود المتعثرة والمحتاجة متابعة بالاسم..." oninput="renderAlerts()" style="max-width:360px;">
     </div>
     <div class="two-col">
       <div class="card">
         <div class="card-head" style="background:var(--red-light);color:var(--red);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-defaulted-list', this)">
-          <span>🔴 عملاء متعثرون <span id="alerts-defaulted-count" style="font-weight:700;"></span></span>
-          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+          <span>🔴 عقود متعثرة (انتهت وفيها متبقي) <span id="alerts-defaulted-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;transform:rotate(180deg);">▾</span>
         </div>
-        <div id="alerts-defaulted-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
+        <div id="alerts-defaulted-list" style="display:flex;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
 
       <div class="card">
         <div class="card-head" style="background:var(--amber-light);color:var(--amber);cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="window.toggleAlertMiniList('alerts-followup-list', this)">
-          <span>⚠️ عقود تحتاج متابعة <span id="alerts-followup-count" style="font-weight:700;"></span></span>
-          <span class="alert-mini-arrow" style="transition:transform .2s;">▾</span>
+          <span>⚠️ عقود تحتاج متابعة (بدون تسعير) <span id="alerts-followup-count" style="font-weight:700;"></span></span>
+          <span class="alert-mini-arrow" style="transition:transform .2s;transform:rotate(180deg);">▾</span>
         </div>
-        <div id="alerts-followup-list" style="display:none;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
+        <div id="alerts-followup-list" style="display:flex;padding:20px;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div>
       </div>
     </div>
   </div>
 </div>
 
-
-<!-- ═══════════════════════════════════════
-     [إضافة جديدة] PAGE: TASKS — قائمة المهام
-═══════════════════════════════════════ -->
-<div class="page" id="page-tasks">
-  <div class="page-header" style="margin-top:24px;">
-    <div class="page-header-main">
-      <div class="page-header-icon">📋</div>
-      <div>
-        <div class="page-header-title">المهام</div>
-        <div class="page-header-desc">إسناد المهام لأعضاء الفريق ومتابعة الردود حتى الإنجاز.</div>
-      </div>
-    </div>
-  </div>
-  <div>
-
-    <div class="section-head" style="margin-top:0;">
-      <div class="section-title">📋 قائمة المهام</div>
-      <button class="btn-sm" id="task-add-btn" onclick="window.openTaskModal()" style="background:var(--gold);border-color:var(--gold);color:#FFFFFF;font-weight:500;display:none;">+ مهمة جديدة</button>
-    </div>
-
-    <div style="display:flex;gap:6px;margin-bottom:20px;">
-      <button class="db-tab active" id="ttab-mine" onclick="showTasksTab('mine',this)">📥 المُسندة لي</button>
-      <button class="db-tab" id="ttab-created" onclick="showTasksTab('created',this)">📤 التي أنشأتها</button>
-    </div>
-
-    <div id="tpanel-mine">
-      <div class="card">
-        <div class="card-head">المهام المُسندة لي</div>
-        <div id="tasks-mine-list" style="display:flex;flex-direction:column;gap:8px;padding:14px 18px;"></div>
-      </div>
-    </div>
-
-    <div id="tpanel-created" style="display:none;">
-      <div class="card">
-        <div class="card-head">المهام التي أنشأتها</div>
-        <div id="tasks-created-list" style="display:flex;flex-direction:column;gap:8px;padding:14px 18px;"></div>
-      </div>
-    </div>
-
-  </div>
-</div>
 
 <!-- نافذة إنشاء مهمة جديدة -->
 <div class="modal-overlay" id="task-modal-overlay" onclick="if(event.target===this)window.closeTaskModal()">
@@ -3421,11 +3414,11 @@ function renderAlertMiniList(elId, list, opts) {
   const el = document.getElementById(elId);
   if (!el) return;
   el.innerHTML = list.length ? list.map(c => `
-    <div style="padding:10px 14px;background:${opts.bg};border-radius:8px;border:1px solid ${opts.border};cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
+    <div style="padding:10px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
       <div style="font-size:13px;font-weight:500;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.displayId||c.id}</span></div>
       <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${esc(c.axis)||'—'} · ${c.buses||0} حافلة</div>
       <div style="font-size:11px;color:${opts.dateColor};margin-top:4px;font-weight:500;">${opts.dateLabel}: ${opts.dateField(c)}</div>
-    </div>`).join('') : `<div style="text-align:center;padding:20px;color:var(--ink-3);font-size:12px;">${opts.emptyText}</div>`;
+    </div>`).join('') : `<div style="text-align:center;padding:14px;color:var(--ink-3);font-size:12px;border:1px dashed var(--border);border-radius:12px;">${opts.emptyText}</div>`;
   const countEl = document.getElementById(elId.replace('-list', '-count'));
   if (countEl) countEl.textContent = list.length ? `(${list.length})` : '';
 }
@@ -3466,48 +3459,42 @@ window.renderAlerts = function() {
   const alertsClientFilterEl = document.getElementById('alerts-client-filter');
   const clientFilter = alertsClientFilterEl ? alertsClientFilterEl.value.trim() : '';
 
-  // 1) عملاء متعثرون — متعثر / تعثر متوقع
-  const defaulted = contracts.filter(c => c.status === 'متعثر' || c.status === 'تعثر متوقع')
-    .filter(c => !clientFilter || (c.client||c.hotel||'').includes(clientFilter));
+  // 1) عقود متعثرة — انتهت (تاريخ النهاية قبل اليوم) وفيها مبلغ متبقي > 0
+  const defaulted = contracts.filter(c => {
+    const e = parseDate(c.end);
+    return e && e < todayA && (c.rem||0) > 0;
+  }).filter(c => !clientFilter || (c.client||c.hotel||'').includes(clientFilter));
   const defEl = document.getElementById('alerts-defaulted-list');
   if (defEl) {
     defEl.innerHTML = defaulted.length ? defaulted.map(c => {
       const paid = (c.originalTotal||c.total||0) - (c.rem||0);
       const pct  = c.total>0 ? Math.round(paid/c.total*100) : 0;
+      const daysLate = Math.round((todayA - parseDate(c.end)) / 86400000);
       return `
-      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px;background:var(--red-light);border-radius:8px;border:1px solid #F5C6C2;cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px;background:var(--white);border-radius:12px;border:1px solid var(--border);cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
         <div style="font-size:22px;">⚠️</div>
         <div style="flex:1;">
           <div style="font-weight:500;font-size:13px;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
           <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${esc(c.hotel)} — ${esc(c.axis)} — ${esc(c.point)||'—'} — ${esc(c.carrier)||'—'}</div>
-          <div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500;">متبقي: ${(c.rem||0).toLocaleString()} ريال · ${pct}% مسدد</div>
-          <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">العقد: ${c.start} → ${c.end} | ${c.buses||0} حافلة | ${c.days||0} يوم تشغيل</div>
+          <div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500;">متأخر ${daysLate} يوم · متبقي: ${(c.rem||0).toLocaleString()} ريال · ${pct}% مسدد</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">العقد: ${c.start} → ${c.end} | ${c.buses||0} حافلة</div>
         </div>
-        <span class="badge ${statusBadge[c.status]||'badge-red'}" style="flex-shrink:0;">${c.status}</span>
       </div>`;
-    }).join('') : `<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px;">لا يوجد عملاء متعثرون حالياً ✓</div>`;
+    }).join('') : `<div style="text-align:center;padding:14px;color:var(--ink-3);font-size:13px;border:1px dashed var(--border);border-radius:12px;">لا توجد عقود متعثرة حالياً ✓</div>`;
   }
   const defCountEl = document.getElementById('alerts-defaulted-count');
   if (defCountEl) defCountEl.textContent = defaulted.length ? `(${defaulted.length})` : '';
 
-  // 3) عقود تحتاج متابعة — لم يبدأ (لم يتم التوقيع) أو بدون تسعير
-  const followup = contracts.filter(c => {
-    return c.status === 'بدون تسعير' || c.status === 'لم يبدأ';
-  }).filter(c => !clientFilter || (c.client||c.hotel||'').includes(clientFilter));
+  // 3) عقود تحتاج متابعة — بدون تسعير (إجمالي = 0)
+  const followup = contracts.filter(c => !c.total || c.total === 0)
+    .filter(c => !clientFilter || (c.client||c.hotel||'').includes(clientFilter));
   const fuEl = document.getElementById('alerts-followup-list');
   if (fuEl) {
-    fuEl.innerHTML = followup.length ? followup.map(c => {
-      const badge = c.status;
-      const sub = c.status === 'بدون تسعير'
-        ? `${esc(c.axis)} | سعر غير محدد`
-        : `${esc(c.axis)} | يبدأ ${c.start} | ${c.buses||0} حافلة`;
-      return `
-      <div style="padding:10px 14px;background:var(--amber-light);border-radius:8px;border:1px solid #F5DFA0;cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
+    fuEl.innerHTML = followup.length ? followup.map(c => `
+      <div style="padding:10px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
         <div style="font-size:13px;font-weight:500;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
-        <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${sub}</div>
-        <span class="badge ${statusBadge[badge]||'badge-amber'}" style="margin-top:6px;display:inline-block;">${badge}</span>
-      </div>`;
-    }).join('') : `<div style="text-align:center;padding:24px;color:var(--ink-3);font-size:13px;">لا توجد عقود تحتاج متابعة حالياً ✓</div>`;
+        <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${esc(c.axis)} · سعر غير محدد</div>
+      </div>`).join('') : `<div style="text-align:center;padding:14px;color:var(--ink-3);font-size:13px;border:1px dashed var(--border);border-radius:12px;">لا توجد عقود تحتاج متابعة حالياً ✓</div>`;
   }
   const fuCountEl = document.getElementById('alerts-followup-count');
   if (fuCountEl) fuCountEl.textContent = followup.length ? `(${followup.length})` : '';
@@ -8049,6 +8036,9 @@ function applyLogin() {
   document.getElementById('user-avatar').textContent      = name.charAt(0);
   document.getElementById('user-badge-name').textContent  = name;
   document.getElementById('user-badge-email').textContent = email + (role==='admin'?' · أدمن':'');
+  const nfa = document.getElementById('nav-footer-avatar'); if (nfa) nfa.textContent = name.charAt(0);
+  const nfn = document.getElementById('nav-footer-name'); if (nfn) nfn.textContent = name;
+  const nfe = document.getElementById('nav-footer-email'); if (nfe) nfe.textContent = email;
   document.getElementById('auth-screen').classList.add('hidden');
   applyPermissions();
   // نحمّل بيانات الموقع هنا تحديدًا (مو عند تحميل الصفحة مباشرة) عشان نضمن
@@ -8531,6 +8521,8 @@ window.showProfileEdit = async function() {
   currentUser.name = newName.trim();
   document.getElementById('user-avatar').textContent      = currentUser.name.charAt(0);
   document.getElementById('user-badge-name').textContent  = currentUser.name;
+  const nfa = document.getElementById('nav-footer-avatar'); if (nfa) nfa.textContent = currentUser.name.charAt(0);
+  const nfn = document.getElementById('nav-footer-name'); if (nfn) nfn.textContent = currentUser.name;
   showToast('✓ تم تحديث الاسم');
 };
 
@@ -11928,7 +11920,7 @@ window.deleteTask = function(id) {
 window.showTasksTab = function(tab, btn) {
   document.getElementById('tpanel-mine').style.display = tab === 'mine' ? '' : 'none';
   document.getElementById('tpanel-created').style.display = tab === 'created' ? '' : 'none';
-  document.querySelectorAll('#page-tasks .db-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#tasks-drawer .db-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 };
 
@@ -12028,15 +12020,12 @@ window.renderMyPendingTasks = function() {
 
 window.toggleTasksFab = function(forceOpen) {
   const panel = document.getElementById('tasks-fab-panel');
+  const backdrop = document.getElementById('tasks-drawer-backdrop');
   if (!panel) return;
-  const open = forceOpen !== undefined ? forceOpen : panel.style.display === 'none';
-  panel.style.display = open ? 'flex' : 'none';
-};
-
-window.openTasksFullPage = function() {
-  window.toggleTasksFab(false);
-  window.showPage('tasks', null);
-  if (window.renderTasksPage) window.renderTasksPage();
+  const open = forceOpen !== undefined ? forceOpen : !panel.classList.contains('open');
+  panel.classList.toggle('open', open);
+  if (backdrop) backdrop.classList.toggle('open', open);
+  if (open && window.renderTasksPage) window.renderTasksPage();
 };
 
 /* ── نافذة المحادثة (التذكرة) — عرض الردود + صندوق الرد المناسب لدور المستخدم الحالي ── */
