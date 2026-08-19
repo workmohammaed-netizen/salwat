@@ -1472,8 +1472,8 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>اسم العميل</th>
             <th>اسم الفندق</th>
+            <th>اسم العميل</th>
             <th>المحور</th>
             <th>نقطة الفرز</th>
             <th>الناقل</th>
@@ -2151,8 +2151,8 @@
           <thead>
             <tr>
               <th>رقم العقد</th>
-              <th>العميل</th>
               <th>الفندق</th>
+              <th>العميل</th>
               <th>المحور</th>
               <th>نقطة الفرز</th>
               <th>الشركة الناقلة</th>
@@ -2190,8 +2190,8 @@
           <thead>
             <tr>
               <th>رقم العقد</th>
-              <th>العميل</th>
               <th>الفندق</th>
+              <th>العميل</th>
               <th>المحور</th>
               <th>نقطة الفرز</th>
               <th>تاريخ البداية</th>
@@ -3415,8 +3415,8 @@ function renderAlertMiniList(elId, list, opts) {
   if (!el) return;
   el.innerHTML = list.length ? list.map(c => `
     <div style="padding:10px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
-      <div style="font-size:13px;font-weight:500;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.displayId||c.id}</span></div>
-      <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${esc(c.axis)||'—'} · ${c.buses||0} حافلة</div>
+      <div style="font-size:13px;font-weight:500;">${esc(c.hotel||c.client)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.displayId||c.id}</span></div>
+      <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.client)} · ${esc(c.axis)||'—'} · ${c.buses||0} حافلة</div>
       <div style="font-size:11px;color:${opts.dateColor};margin-top:4px;font-weight:500;">${opts.dateLabel}: ${opts.dateField(c)}</div>
     </div>`).join('') : `<div style="text-align:center;padding:14px;color:var(--ink-3);font-size:12px;border:1px dashed var(--border);border-radius:12px;">${opts.emptyText}</div>`;
   const countEl = document.getElementById(elId.replace('-list', '-count'));
@@ -3474,8 +3474,8 @@ window.renderAlerts = function() {
       <div style="display:flex;gap:14px;align-items:flex-start;padding:12px;background:var(--white);border-radius:12px;border:1px solid var(--border);cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
         <div style="font-size:22px;">⚠️</div>
         <div style="flex:1;">
-          <div style="font-weight:500;font-size:13px;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
-          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${esc(c.hotel)} — ${esc(c.axis)} — ${esc(c.point)||'—'} — ${esc(c.carrier)||'—'}</div>
+          <div style="font-weight:500;font-size:13px;">${esc(c.hotel||c.client)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;">${esc(c.client)} — ${esc(c.axis)} — ${esc(c.point)||'—'} — ${esc(c.carrier)||'—'}</div>
           <div style="font-size:12px;color:var(--red);margin-top:6px;font-weight:500;">متأخر ${daysLate} يوم · متبقي: ${(c.rem||0).toLocaleString()} ريال · ${pct}% مسدد</div>
           <div style="font-size:11px;color:var(--ink-3);margin-top:4px;">العقد: ${c.start} → ${c.end} | ${c.buses||0} حافلة</div>
         </div>
@@ -3492,8 +3492,8 @@ window.renderAlerts = function() {
   if (fuEl) {
     fuEl.innerHTML = followup.length ? followup.map(c => `
       <div style="padding:10px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);cursor:pointer;" onclick="openContractDetail(${c.id}, true)">
-        <div style="font-size:13px;font-weight:500;">${esc(c.client||c.hotel)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
-        <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.hotel)} · ${esc(c.axis)} · سعر غير محدد</div>
+        <div style="font-size:13px;font-weight:500;">${esc(c.hotel||c.client)} <span style="color:var(--ink-3);font-weight:400;font-size:11px;">— عقد #${c.id}</span></div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">${esc(c.client)} · ${esc(c.axis)} · سعر غير محدد</div>
       </div>`).join('') : `<div style="text-align:center;padding:14px;color:var(--ink-3);font-size:13px;border:1px dashed var(--border);border-radius:12px;">لا توجد عقود تحتاج متابعة حالياً ✓</div>`;
   }
   const fuCountEl = document.getElementById('alerts-followup-count');
@@ -3538,8 +3538,8 @@ window.renderContracts = function(data) {
     return `
     <tr style="${rowStyle}" onclick="openContractDetail(${c.id})" title="اضغط لعرض التفاصيل وتسجيل دفعة">
       <td style="color:var(--ink-3);font-size:12px;">${isChild ? '&nbsp;&nbsp;' : ''}${c.displayId || c.id}${childLabel}</td>
-      <td><div class="hotel-name">${esc(c.client)||'—'}${c.distributedPayment ? ` <span title="هذا العقد جزء من دفعة واحدة موزّعة على أكثر من عقد" style="display:inline-block;background:var(--green-light);color:var(--green-dark);font-size:9.5px;font-weight:700;border-radius:5px;padding:1px 6px;margin-right:5px;white-space:nowrap;">⇄ موزّعة</span>` : ''}</div></td>
-      <td>${esc(c.hotel)}</td>
+      <td><div class="hotel-name">${esc(c.hotel)||'—'}${c.distributedPayment ? ` <span title="هذا العقد جزء من دفعة واحدة موزّعة على أكثر من عقد" style="display:inline-block;background:var(--green-light);color:var(--green-dark);font-size:9.5px;font-weight:700;border-radius:5px;padding:1px 6px;margin-right:5px;white-space:nowrap;">⇄ موزّعة</span>` : ''}</div></td>
+      <td>${esc(c.client)}</td>
       <td>${esc(c.axis)}</td>
       <td style="font-size:12px;color:var(--ink-3);">${esc(c.point)}</td>
       <td>${esc(c.carrier)}</td>
@@ -3634,9 +3634,9 @@ window.exportContracts = function(type) {
     (!status  || (c.status||'').includes(status)) &&
     (!search  || (c.client||'').toLowerCase().includes(search) || (c.hotel||'').toLowerCase().includes(search))
   );
-  const columns = ['#','العميل','الفندق','المحور','نقطة الفرز','الناقل','أمر الإيجار','الحافلات','تاريخ الإنشاء','البداية','النهاية','الأيام','سعر التشغيل','رسوم المحطة','الإجمالي','المسدد','المتبقي','الحالة'];
+  const columns = ['#','الفندق','العميل','المحور','نقطة الفرز','الناقل','أمر الإيجار','الحافلات','تاريخ الإنشاء','البداية','النهاية','الأيام','سعر التشغيل','رسوم المحطة','الإجمالي','المسدد','المتبقي','الحالة'];
   const rows = data.map(c => [
-    c.displayId || c.id, c.client||'—', c.hotel, c.axis, c.point||'—', c.carrier||'—', c.rentalOrder||'—',
+    c.displayId || c.id, c.hotel, c.client||'—', c.axis, c.point||'—', c.carrier||'—', c.rentalOrder||'—',
     c.buses||0, c.createdAt||'—', c.start, c.end, c.days,
     c.price||0, c.rentalCost||0, c.total||0, (c.originalTotal||c.total||0)-(c.rem||0), c.rem||0, c.status||'—'
   ]);
@@ -3761,7 +3761,7 @@ async function importFromWorkbook(wb) {
 
   addAuditEntry(currentUser.name||'النظام', 'إضافة', '—', '—',
     `استيراد إكسل: ${contractStats.added} عقد جديد · ${contractStats.updated} عقد محدَّث · ${dbStats.clients} عميل جديد · ${dbStats.hotels} فندق جديد · ${dbStats.axes} محور جديد · ${dbStats.carriers} ناقل جديد`,
-    contractStats.skipped ? `تم تجاهل ${contractStats.skipped} صف بدون عميل/فندق أو بدون تواريخ صحيحة` : '');
+    contractStats.skipped ? `تم تجاهل ${contractStats.skipped} صف (بدون عميل/فندق، بدون تواريخ صحيحة، أو فترة منتهية بالكامل قبل اليوم)` : '');
 
   showToast(`✓ تم الاستيراد — ${contractStats.added} عقد جديد، ${contractStats.updated} عقد محدَّث، ${dbStats.clients} عميل جديد، ${dbStats.hotels} فندق جديد`);
 }
@@ -3912,14 +3912,20 @@ async function importContractsSheet(rows) {
   const dataRows = rows.slice(2); // أول صفين عناوين
 
   // فهارس مطابقة للعقود الموجودة مسبقاً — تُستخدم لمنع تكرار الاستيراد (تحديث بدل إضافة نسخة جديدة).
-  // مفتاح 1 (الأدق): رقم أمر الإيجار + اسم الفندق. مفتاح 2 (احتياطي): العميل + الفندق + تاريخ البداية + تاريخ النهاية.
-  const byOrderHotel = new Map();
+  // مفتاح 1 (الأدق): رقم أمر الإيجار + اسم الفندق + تاريخ البداية والنهاية معًا — عشان لو نفس رقم
+  // الطلب تكرر بعدة فترات مختلفة (تمديدات) يُسجَّل كل فترة كعقد مستقل بدل ما تُستبدل ببعضها.
+  // مفتاح 2 (احتياطي): العميل + الفندق + تاريخ البداية + تاريخ النهاية.
+  const byOrderHotelDates = new Map();
   const byClientHotelDates = new Map();
   const regKeys = (c) => {
-    if (c.rentalOrder) byOrderHotel.set(`${c.rentalOrder}||${c.hotel}`, c);
+    if (c.rentalOrder) byOrderHotelDates.set(`${c.rentalOrder}||${c.hotel}||${c.start}||${c.end}`, c);
     byClientHotelDates.set(`${c.client}||${c.hotel}||${c.start}||${c.end}`, c);
   };
   contracts.forEach(regKeys);
+
+  // اليوم (بدون وقت) — لاستبعاد الفترات المنتهية بالكامل من الإكسل، حتى لا يمتلئ النظام
+  // بعقود قديمة منتهية كل ما استوردنا نفس ملف السجل التراكمي
+  const todayImport = new Date(); todayImport.setHours(0,0,0,0);
 
   for (const r of dataRows) {
     const client = normStr(r[4]);
@@ -3933,6 +3939,8 @@ async function importContractsSheet(rows) {
     const startCheck = new Date(startStr.split('/').reverse().join('-'));
     const endCheck    = new Date(endStr.split('/').reverse().join('-'));
     if (endCheck < startCheck) { stats.skipped++; continue; }
+    // تجاهل الفترات المنتهية بالكامل (تاريخ نهايتها قبل اليوم) — نستورد فقط النشط والقادم
+    if (endCheck < todayImport) { stats.skipped++; continue; }
 
     const axis        = normStr(r[6]);
     const point        = normStr(r[8]) || axis;
@@ -3964,8 +3972,8 @@ async function importContractsSheet(rows) {
     const axisObj = db.axes.find(x => x.name === axis);
     const carrierObj = db.carriers.find(x => x.name === carrier);
 
-    // ابحث عن عقد موجود مسبقاً يطابق هذا الصف — عبر رقم أمر الإيجار أولاً، ثم العميل+الفندق+التواريخ
-    const matched = (rentalOrder && byOrderHotel.get(`${rentalOrder}||${hotel}`))
+    // ابحث عن عقد موجود مسبقاً يطابق هذا الصف بالضبط (نفس رقم الطلب أو نفس العميل، + نفس الفندق والتواريخ)
+    const matched = (rentalOrder && byOrderHotelDates.get(`${rentalOrder}||${hotel}||${startStr}||${endStr}`))
       || byClientHotelDates.get(`${client}||${hotel}||${startStr}||${endStr}`)
       || null;
 
@@ -4528,8 +4536,8 @@ window.openContractDetail = function(id, readOnly) {
   const pct  = c.total > 0 ? Math.round(paid / c.total * 100) : 0;
   const barColor = pct >= 100 ? 'var(--green-acc)' : pct > 50 ? 'var(--gold)' : 'var(--red)';
 
-  document.getElementById('detail-hotel-name').textContent = c.client || c.hotel;
-  document.getElementById('detail-meta').textContent = `عقد #${c.displayId || c.id} · ${c.hotel} · ${c.axis} · ${c.point} · ${c.start} — ${c.end}${c.rentalOrder ? ' · أمر الإيجار: '+c.rentalOrder : ''}${c.discountDays ? ' · خصم: '+c.discountDays+' يوم' : ''}`;
+  document.getElementById('detail-hotel-name').textContent = c.hotel || c.client;
+  document.getElementById('detail-meta').textContent = `عقد #${c.displayId || c.id} · ${c.client} · ${c.axis} · ${c.point} · ${c.start} — ${c.end}${c.rentalOrder ? ' · أمر الإيجار: '+c.rentalOrder : ''}${c.discountDays ? ' · خصم: '+c.discountDays+' يوم' : ''}`;
   const origTotal = c.originalTotal || c.total;
   const totalDiscounts = discountsLog.filter(d => d.contractId === id).reduce((s,d)=>s+d.amount,0);
 
@@ -10272,7 +10280,7 @@ window.openOperationsDetail = function(id) {
   if (!c) return;
   const myFlows   = flowsLog.filter(f => f.contractId === id);
   const flowBuses = myFlows.reduce((s,f) => s + (f.buses||0), 0);
-  document.getElementById('ops-detail-title').textContent = c.client || c.hotel || '—';
+  document.getElementById('ops-detail-title').textContent = c.hotel || c.client || '—';
   document.getElementById('ops-detail-meta').textContent  = `عقد #${c.displayId || c.id}`;
 
   const row = (label, value) => `
@@ -10282,7 +10290,7 @@ window.openOperationsDetail = function(id) {
     </div>`;
 
   let html = '';
-  html += row('الفندق', esc(c.hotel) || '—');
+  html += row('العميل', esc(c.client) || '—');
   html += row('المحور', esc(c.axis) || '—');
   html += row('نقطة الفرز', esc(c.point) || '—');
   html += row('الناقل', esc(c.carrier) || '—');
@@ -10530,8 +10538,8 @@ window.renderOperations = function() {
     return `
     <tr style="${rowBg}cursor:pointer;" onclick="openOperationsDetail(${c.id})" title="اضغط لعرض التفاصيل التشغيلية: ${esc(c.hotel)} · ${esc(c.axis)} · ${esc(c.point)||'—'}">
       <td style="color:var(--ink-3);font-size:12px;font-weight:500;">#${c.displayId || c.id}</td>
-      <td><div class="hotel-name">${esc(c.client)||'—'}</div></td>
-      <td>${esc(c.hotel)}</td>
+      <td><div class="hotel-name">${esc(c.hotel)||'—'}</div></td>
+      <td>${esc(c.client)}</td>
       <td>${esc(c.axis)}</td>
       <td style="font-size:12px;color:var(--ink-3);">${esc(c.point)||'—'}</td>
       <td>${esc(c.carrier)||'—'}</td>
