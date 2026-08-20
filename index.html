@@ -2574,6 +2574,7 @@
 
         <div class="form-group full">
           <label class="form-label">اسم العميل / الشركة <span>*</span></label>
+          <input class="form-input" id="f-client-search" type="text" placeholder="🔍 ابحث باسم العميل..." oninput="populateContractDropdowns()" style="margin-bottom:8px;">
           <select class="form-select" id="f-client" onchange="onClientChange()">
             <option value="">— اختر من القائمة —</option>
           </select>
@@ -4121,8 +4122,15 @@ window.populateContractDropdowns = function() {
   const clientSel = document.getElementById('f-client');
   if (clientSel) {
     const keep = clientSel.value;
+    const search = (document.getElementById('f-client-search')?.value || '').trim().toLowerCase();
+    let list = search ? db.clients.filter(c => c.name.toLowerCase().includes(search)) : db.clients;
+    // نحافظ على العميل المختار حاليًا ضمن الخيارات حتى لو ما طابق نص البحث، حتى لا يُفقَد الاختيار
+    if (keep && !list.some(c => c.name === keep)) {
+      const kept = db.clients.find(c => c.name === keep);
+      if (kept) list = [kept, ...list];
+    }
     clientSel.innerHTML = '<option value="">— اختر من القائمة —</option>' +
-      db.clients.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+      list.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
     clientSel.value = keep;
   }
   populateHotelDropdown();
@@ -4479,7 +4487,7 @@ window.highlight = function(id) {
 }
 
 window.resetForm = function() {
-  ['f-client','f-location','f-start','f-end','f-notes','f-rentalorder','f-hotel-search'].forEach(id => {
+  ['f-client','f-location','f-start','f-end','f-notes','f-rentalorder','f-hotel-search','f-client-search'].forEach(id => {
     const el = document.getElementById(id); if (el) { el.value = ''; el.disabled = false; }
   });
   const hotelList = document.getElementById('f-hotel-list');
